@@ -1,0 +1,517 @@
+// Fabri GROUP - All-in-One Mobility Platform
+// Prisma schema: customer booking engine, desk operator workflow, super admin governance.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+enum UserRole {
+  client
+  operator
+  super_admin
+
+  @@map("user_role")
+}
+
+enum BookingService {
+  rent
+  parking
+
+  @@map("booking_service")
+}
+
+enum ParkingSlotType {
+  coperto
+  scoperto
+
+  @@map("parking_slot_type")
+}
+
+enum ParkingCategory {
+  moto
+  auto
+  furgone
+
+  @@map("parking_category")
+}
+
+enum VehicleStatus {
+  available
+  rented
+  maintenance
+  retired
+
+  @@map("vehicle_status")
+}
+
+enum PricingScope {
+  rent
+  parking
+
+  @@map("pricing_scope")
+}
+
+enum PricingRuleType {
+  date_range // e.g. alta stagione, ponti, festivita' (explicit start/end date)
+  weekday // Mon-Fri
+  weekend // Sat-Sun
+  holiday // single recurring/one-off holiday date
+
+  @@map("pricing_rule_type")
+}
+
+enum InsuranceZone {
+  sud_italia
+  centro_nord_italia
+
+  @@map("insurance_zone")
+}
+
+enum InsuranceTier {
+  base
+  medium
+  full
+  kasko_senza_cauzione
+
+  @@map("insurance_tier")
+}
+
+enum DocumentType {
+  id_card_front
+  id_card_back
+  license_front
+  license_back
+
+  @@map("document_type")
+}
+
+enum DocumentAuditStatus {
+  pending
+  approved
+  reupload_requested
+
+  @@map("document_audit_status")
+}
+
+enum CheckInMethod {
+  digital_signature
+  otp_sms
+
+  @@map("check_in_method")
+}
+
+enum ExtensionChannel {
+  whatsapp
+  web
+
+  @@map("extension_channel")
+}
+
+enum ExtensionStatus {
+  pending
+  approved
+  rejected
+
+  @@map("extension_status")
+}
+
+enum DamageTicketStatus {
+  open
+  deposit_withheld
+  resolved
+
+  @@map("damage_ticket_status")
+}
+
+enum PaymentType {
+  rental_charge // automatic capture, main rent/parking total
+  deposit_authorization // capture_method manual, pre-auth cauzione
+  kasko_charge // direct immediate charge, franchigia 0, total incl. insurance
+  extra_charge // extras, penalty, damage captured later by desk
+  refund
+
+  @@map("payment_type")
+}
+
+enum PaymentStatus {
+  pending
+  authorized
+  captured
+  failed
+  refunded
+  canceled
+
+  @@map("payment_status")
+}
+
+// ---------------------------------------------------------------------------
+// Users & Auth
+// ---------------------------------------------------------------------------
+
+model User {
+  id                  String   @id @default(uuid())
+  fullName            String   @map("full_name")
+  email               String   @unique
+  passwordHash        String?  @map("password_hash")
+  phone               String
+  role                UserRole @default(client)
+
+  idCardNumber        String?  @map("id_card_number")
+  driverLicenseNumber String?  @map("driver_license_number")
+
+  idCardFrontUrl      String?  @map("id_card_front_url")
+  idCardBackUrl        String? @map("id_card_back_url")
+  licenseFrontUrl     String?  @map("license_front_url")
+  licenseBackUrl      String?  @map("license_back_url")
+
+  // Fatturazione elettronica
+  companyName         String?  @map("company_name") // Ragione Sociale / Nome
+  vatNumber           String?  @map("vat_number") // P.IVA / Codice Fiscale
+  sdiCode             String?  @map("sdi_code") // Codice Univoco SDI
+  pec                 String?
+
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  bookings            Booking[]               @relation("BookingCustomer")
+  operatedBookings    Booking[]               @relation("BookingOperator")
+  documentAudits      DocumentAudit[]
+  reviewedAudits      DocumentAudit[]         @relation("DocumentAuditReviewer")
+  auditLogs           AuditLog[]
+  priceOverrides      Booking[]               @relation("BookingPriceOverrideBy")
+
+  @@map("users")
+}
+
+// ---------------------------------------------------------------------------
+// Fleet
+// ---------------------------------------------------------------------------
+
+model Vehicle {
+  id             String        @id @default(uuid())
+  name           String // es. "Fiat Panda 1.0 Hybrid"
+  category       String // es. "City Car" - matching group used for "o simile" assignment
+  isOrSimilar    Boolean       @default(true) @map("is_or_similar")
+  dailyRate      Decimal       @db.Decimal(10, 2) @map("daily_rate")
+  status         VehicleStatus @default(available)
+  seats          Int?
+  transmission   String?
+  fuelType       String?       @map("fuel_type")
+  imageUrl       String?       @map("image_url")
+  plate          String?       @unique
+  maintenanceNote String?      @map("maintenance_note")
+
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @updatedAt @map("updated_at")
+
+  bookings       Booking[]
+
+  @@map("vehicles")
+}
+
+// ---------------------------------------------------------------------------
+// Dynamic pricing (super admin governance)
+// ---------------------------------------------------------------------------
+
+model PricingRule {
+  id            String          @id @default(uuid())
+  name          String // es. "Alta stagione agosto", "Ponte 25 aprile"
+  scope         PricingScope
+  type          PricingRuleType
+  startDate     DateTime?       @map("start_date") // for date_range / holiday
+  endDate       DateTime?       @map("end_date") // for date_range
+  category      String? // optional: restrict rule to a vehicle/parking category
+  multiplier    Decimal         @default(1) @db.Decimal(5, 2) // e.g. 1.30 = +30%
+  fixedRate     Decimal?        @db.Decimal(10, 2) @map("fixed_rate") // overrides base rate entirely if set
+  priority      Int             @default(0) // higher wins when multiple rules match
+  active        Boolean         @default(true)
+
+  createdAt     DateTime        @default(now()) @map("created_at")
+  updatedAt     DateTime        @updatedAt @map("updated_at")
+
+  @@map("pricing_rules")
+}
+
+model ParkingBaseRate {
+  id           String          @id @default(uuid())
+  category     ParkingCategory @unique
+  dailyRate    Decimal         @db.Decimal(10, 2) @map("daily_rate") // scoperto base rate
+  copertoUplift Decimal        @default(0.40) @db.Decimal(5, 2) @map("coperto_uplift") // +40%
+
+  @@map("parking_base_rates")
+}
+
+model ParkingCapacity {
+  id        String          @id @default(uuid())
+  slotType  ParkingSlotType @unique
+  maxSlots  Int             @map("max_slots")
+  updatedAt DateTime        @updatedAt @map("updated_at")
+
+  @@map("parking_capacity")
+}
+
+// ---------------------------------------------------------------------------
+// Insurance (geo-localized franchigie)
+// ---------------------------------------------------------------------------
+
+model InsuranceOption {
+  id                 String        @id @default(uuid())
+  zone               InsuranceZone
+  tier               InsuranceTier
+  label              String // e.g. "Franchigia Base", "KASKO Senza Cauzione"
+  residualDeductible Decimal       @db.Decimal(10, 2) @map("residual_deductible") // never 0 for sud_italia tiers
+  dailyCost          Decimal       @db.Decimal(10, 2) @map("daily_cost")
+  requiresCreditCard Boolean       @default(false) @map("requires_credit_card") // KASKO only
+  active             Boolean       @default(true)
+
+  bookings           Booking[]
+
+  @@unique([zone, tier])
+  @@map("insurance_options")
+}
+
+// ---------------------------------------------------------------------------
+// Extra services (upselling)
+// ---------------------------------------------------------------------------
+
+model ExtraService {
+  id          String   @id @default(uuid())
+  code        String   @unique // car_wash, child_seat, additional_driver, shuttle
+  label       String
+  price       Decimal  @db.Decimal(10, 2)
+  perDay      Boolean  @default(false) @map("per_day")
+  active      Boolean  @default(true)
+
+  bookingExtras BookingExtraService[]
+
+  @@map("extra_services")
+}
+
+model BookingExtraService {
+  id             String       @id @default(uuid())
+  bookingId      String       @map("booking_id")
+  extraServiceId String       @map("extra_service_id")
+  quantity       Int          @default(1)
+  unitPrice      Decimal      @db.Decimal(10, 2) @map("unit_price") // snapshot at booking time
+
+  booking        Booking      @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  extraService   ExtraService @relation(fields: [extraServiceId], references: [id])
+
+  @@map("booking_extra_services")
+}
+
+// ---------------------------------------------------------------------------
+// Bookings
+// ---------------------------------------------------------------------------
+
+model Booking {
+  id              String         @id @default(uuid())
+  userId          String         @map("user_id")
+  serviceType     BookingService @map("service_type")
+
+  // Rent
+  vehicleId       String?        @map("vehicle_id")
+
+  // Parking (Parking Go)
+  parkingType     ParkingSlotType?  @map("parking_type")
+  parkingCategory ParkingCategory?  @map("parking_category")
+  keysLeft        Boolean        @default(false) @map("keys_left")
+
+  startDate       DateTime       @map("start_date")
+  endDate         DateTime       @map("end_date")
+  location        String         @default("Via Privata Detta Sacra 33")
+
+  // Insurance (rent only)
+  insuranceOptionId String?      @map("insurance_option_id")
+
+  basePrice       Decimal        @db.Decimal(10, 2) @map("base_price")
+  insurancePrice  Decimal        @default(0) @db.Decimal(10, 2) @map("insurance_price")
+  extrasPrice     Decimal        @default(0) @db.Decimal(10, 2) @map("extras_price")
+  totalPrice      Decimal        @db.Decimal(10, 2) @map("total_price")
+  depositAmount   Decimal        @default(0) @db.Decimal(10, 2) @map("deposit_amount")
+  hasDeposit      Boolean        @default(true) @map("has_deposit")
+
+  priceOverride       Decimal?   @db.Decimal(10, 2) @map("price_override")
+  priceOverrideReason  String?   @map("price_override_reason")
+  priceOverrideById    String?   @map("price_override_by_id")
+
+  paymentStatus   String         @default("pending") @map("payment_status")
+
+  // Check-in / check-out (desk operator workflow)
+  checkInAt       DateTime?      @map("check_in_at")
+  checkInKm       Int?           @map("check_in_km")
+  checkInFuel     String?        @map("check_in_fuel")
+  checkInMethod   CheckInMethod? @map("check_in_method")
+  signatureUrl    String?        @map("signature_url")
+  otpVerifiedAt   DateTime?      @map("otp_verified_at")
+  operatorId      String?        @map("operator_id")
+
+  actualReturnAt  DateTime?      @map("actual_return_at")
+  checkOutKm      Int?           @map("check_out_km")
+  checkOutFuel    String?        @map("check_out_fuel")
+
+  penaltyAppliedAt     DateTime? @map("penalty_applied_at")
+  penaltyAmount        Decimal?  @db.Decimal(10, 2) @map("penalty_amount")
+  penaltyReason        String?   @map("penalty_reason")
+
+  status          String         @default("confirmed") // confirmed, checked_in, completed, canceled
+
+  createdAt       DateTime       @default(now()) @map("created_at")
+  updatedAt       DateTime       @updatedAt @map("updated_at")
+
+  user            User            @relation("BookingCustomer", fields: [userId], references: [id])
+  vehicle         Vehicle?        @relation(fields: [vehicleId], references: [id])
+  insuranceOption InsuranceOption? @relation(fields: [insuranceOptionId], references: [id])
+  operator        User?           @relation("BookingOperator", fields: [operatorId], references: [id])
+  priceOverrideBy User?           @relation("BookingPriceOverrideBy", fields: [priceOverrideById], references: [id])
+
+  extras          BookingExtraService[]
+  damageReports   DamageReport[]
+  damageTickets   DamageTicket[]
+  extensionRequests ExtensionRequest[] @relation("ExtensionOriginBooking")
+  bumpedByExtensions ExtensionRequest[] @relation("ExtensionBumpedBooking")
+  payments        Payment[]
+  documentAudits  DocumentAudit[]
+
+  @@index([userId])
+  @@index([vehicleId])
+  @@index([startDate, endDate])
+  @@map("bookings")
+}
+
+// ---------------------------------------------------------------------------
+// Document audit (4-slot uploader verification by desk operator)
+// ---------------------------------------------------------------------------
+
+model DocumentAudit {
+  id           String              @id @default(uuid())
+  userId       String              @map("user_id")
+  bookingId    String?             @map("booking_id")
+  documentType DocumentType        @map("document_type")
+  fileUrl      String              @map("file_url")
+  status       DocumentAuditStatus @default(pending)
+  reviewedById String?             @map("reviewed_by_id")
+  reviewNote   String?             @map("review_note")
+  reviewedAt   DateTime?           @map("reviewed_at")
+  createdAt    DateTime            @default(now()) @map("created_at")
+
+  user         User     @relation(fields: [userId], references: [id])
+  booking      Booking? @relation(fields: [bookingId], references: [id])
+  reviewedBy   User?    @relation("DocumentAuditReviewer", fields: [reviewedById], references: [id])
+
+  @@map("document_audits")
+}
+
+// ---------------------------------------------------------------------------
+// Damage logging
+// ---------------------------------------------------------------------------
+
+model DamageReport {
+  id          String   @id @default(uuid())
+  bookingId   String   @map("booking_id")
+  photoUrls   String[] @map("photo_urls") // pre-existing damage photos at check-in
+  notes       String?
+  reportPdfUrl String? @map("report_pdf_url") // report + contract PDF sent to customer
+  emailSentAt DateTime? @map("email_sent_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  booking     Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@map("damage_reports")
+}
+
+model DamageTicket {
+  id                    String             @id @default(uuid())
+  bookingId             String             @map("booking_id")
+  description           String
+  depositWithheldAmount Decimal            @default(0) @db.Decimal(10, 2) @map("deposit_withheld_amount")
+  reportPdfUrl          String?            @map("report_pdf_url") // descriptive report, no photos
+  status                DamageTicketStatus @default(open)
+  createdAt             DateTime           @default(now()) @map("created_at")
+  resolvedAt            DateTime?          @map("resolved_at")
+
+  booking               Booking            @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@map("damage_tickets")
+}
+
+// ---------------------------------------------------------------------------
+// Smart extension engine
+// ---------------------------------------------------------------------------
+
+model ExtensionRequest {
+  id                 String            @id @default(uuid())
+  bookingId          String            @map("booking_id") // booking being extended
+  channel            ExtensionChannel
+  requestedEndDate   DateTime          @map("requested_end_date")
+  status             ExtensionStatus   @default(pending)
+
+  // if the specific vehicle was already booked by a second client, that
+  // second booking gets auto-reassigned to another "o simile" vehicle so
+  // the first booking's extension can be approved.
+  bumpedBookingId    String?           @map("bumped_booking_id")
+  reassignedVehicleId String?          @map("reassigned_vehicle_id")
+
+  decidedById        String?           @map("decided_by_id")
+  createdAt          DateTime          @default(now()) @map("created_at")
+  decidedAt          DateTime?         @map("decided_at")
+
+  booking            Booking  @relation("ExtensionOriginBooking", fields: [bookingId], references: [id], onDelete: Cascade)
+  bumpedBooking       Booking? @relation("ExtensionBumpedBooking", fields: [bumpedBookingId], references: [id])
+
+  @@map("extension_requests")
+}
+
+// ---------------------------------------------------------------------------
+// Payments (Stripe)
+// ---------------------------------------------------------------------------
+
+model Payment {
+  id                    String        @id @default(uuid())
+  bookingId             String        @map("booking_id")
+  type                  PaymentType
+  status                PaymentStatus @default(pending)
+  amount                Decimal       @db.Decimal(10, 2)
+  currency              String        @default("eur")
+  // Not unique: a non-KASKO rental combines the rental charge and the
+  // deposit hold into a single Stripe PaymentIntent (see booking-service.ts),
+  // so two Payment rows can point at the same stripePaymentIntentId.
+  stripePaymentIntentId String?       @map("stripe_payment_intent_id")
+  captureMethod         String        @default("automatic") @map("capture_method") // "manual" for deposit auth
+  createdAt             DateTime      @default(now()) @map("created_at")
+  capturedAt            DateTime?     @map("captured_at")
+  canceledAt            DateTime?     @map("canceled_at")
+
+  booking               Booking       @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@index([stripePaymentIntentId])
+  @@map("payments")
+}
+
+// ---------------------------------------------------------------------------
+// Audit log (governance)
+// ---------------------------------------------------------------------------
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  actorId    String?  @map("actor_id")
+  action     String
+  entityType String   @map("entity_type")
+  entityId   String?  @map("entity_id")
+  metadata   Json?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  actor      User?    @relation(fields: [actorId], references: [id])
+
+  @@map("audit_log")
+}
