@@ -141,3 +141,76 @@ export async function generateRentalContractPdf(params: {
 
   return buildDocument(params.companyName, "Contratto di Noleggio", lines);
 }
+
+export async function generateInvoicePdf(params: {
+  companyName: string;
+  companyVatNumber: string | null;
+  customerName: string;
+  customerVatOrFiscalCode: string | null;
+  invoiceNumber: string;
+  bookingId: string;
+  taxableAmount: number;
+  vatAmount: number;
+  totalAmount: number;
+  isProforma: boolean;
+  createdAt: Date;
+}): Promise<Uint8Array> {
+  const lines = [
+    ...(params.isProforma ? ["** PROFORMA - documento non valido ai fini fiscali **", ""] : []),
+    `Numero: ${params.invoiceNumber}`,
+    `Data: ${formatItalianDate(params.createdAt)}`,
+    `Emittente: ${params.companyName}${params.companyVatNumber ? ` - P.IVA ${params.companyVatNumber}` : ""}`,
+    `Cliente: ${params.customerName}${params.customerVatOrFiscalCode ? ` - ${params.customerVatOrFiscalCode}` : ""}`,
+    `Riferimento prenotazione: ${params.bookingId}`,
+    "",
+    `Imponibile: EUR ${params.taxableAmount.toFixed(2)}`,
+    `IVA (22%): EUR ${params.vatAmount.toFixed(2)}`,
+    `Totale: EUR ${params.totalAmount.toFixed(2)}`,
+  ];
+
+  return buildDocument(params.companyName, params.isProforma ? "Proforma" : "Fattura", lines);
+}
+
+export async function generateAppealPdf(params: {
+  companyName: string;
+  companyVatNumber: string | null;
+  companyAddress: string | null;
+  customerName: string;
+  customerFiscalCode: string | null;
+  contractNumber: number | null;
+  bookingId: string;
+  plate: string;
+  verbaleNumber: string;
+  violationDate: Date;
+  issuingAuthorityName: string;
+  createdAt: Date;
+}): Promise<Uint8Array> {
+  const lines = [
+    `Spett.le ${params.issuingAuthorityName}`,
+    "",
+    `Oggetto: Ricorso avverso verbale n. ${params.verbaleNumber} del ${formatItalianDate(params.violationDate)} - targa ${params.plate}`,
+    "",
+    `Societa': ${params.companyName}${params.companyVatNumber ? ` - P.IVA ${params.companyVatNumber}` : ""}`,
+    `Sede: ${params.companyAddress ?? "-"}`,
+    "",
+    `Il/la sottoscritto/a dichiara che, alla data della violazione, il veicolo targato ${params.plate}`,
+    `era condotto da ${params.customerName}${params.customerFiscalCode ? ` (CF ${params.customerFiscalCode})` : ""},`,
+    `in forza del contratto di noleggio n. ${params.contractNumber ?? params.bookingId}.`,
+    "",
+    "Si allegano: copia del contratto di noleggio, copia dei documenti del locatario,",
+    "copia del verbale.",
+    "",
+    "Si richiede pertanto la rettifica dell'intestazione del verbale al soggetto",
+    "sopra indicato, quale effettivo conducente del veicolo alla data dei fatti.",
+    "",
+    `Data: ${formatItalianDate(params.createdAt)}`,
+    "",
+    "Il presente documento e' generato automaticamente a partire dai dati del",
+    "contratto e non sostituisce una revisione legale: si raccomanda la verifica",
+    "da parte di un professionista abilitato prima dell'invio.",
+    "",
+    "Firma: ___________________________",
+  ];
+
+  return buildDocument(params.companyName, "Ricorso Verbale", lines);
+}

@@ -3,8 +3,13 @@ import { ExtensionRequestForm } from "@/components/desk/extension-request-form";
 import { ExtensionRequestList } from "@/components/desk/extension-request-list";
 import { requireTenant } from "@/lib/session";
 
-export default async function ExtensionsPage() {
+export default async function ExtensionsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ bookingId?: string }>;
+}) {
   const { tenantId } = await requireTenant();
+  const { bookingId } = await searchParams;
   const requests = await prisma.extensionRequest.findMany({
     where: { tenantId, status: "pending" },
     include: { booking: { include: { user: true, vehicle: true } } },
@@ -23,7 +28,7 @@ export default async function ExtensionsPage() {
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">Smart Extension Engine</h1>
-      <ExtensionRequestForm />
+      <ExtensionRequestForm defaultBookingId={bookingId} />
       <ExtensionRequestList requests={dto} />
     </div>
   );

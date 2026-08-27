@@ -43,6 +43,8 @@ export async function assignVehicleForBooking(params: {
   category: string;
   startDate: Date;
   endDate: Date;
+  excludeVehicleId?: string;
+  excludeBookingId?: string;
 }) {
   const [vehicle] = await findAvailableVehiclesInCategory(params);
   return vehicle ?? null;

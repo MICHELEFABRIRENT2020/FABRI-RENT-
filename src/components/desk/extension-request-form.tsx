@@ -11,10 +11,10 @@ import { toast } from "sonner";
 import { createExtensionRequest } from "@/lib/actions/desk-actions";
 import { toDatetimeLocalValue, datetimeLocalToISO } from "@/lib/datetime-input";
 
-export function ExtensionRequestForm() {
+export function ExtensionRequestForm({ defaultBookingId }: { defaultBookingId?: string }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [bookingId, setBookingId] = useState("");
+  const [bookingId, setBookingId] = useState(defaultBookingId ?? "");
   const [requestedEndDate, setRequestedEndDate] = useState(toDatetimeLocalValue(new Date()));
   const [channel, setChannel] = useState<"whatsapp" | "web">("whatsapp");
 
