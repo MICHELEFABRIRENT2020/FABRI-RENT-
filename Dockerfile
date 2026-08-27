@@ -2,7 +2,7 @@
 # Build: docker build -t fabrigroup-rent-manager .
 # Run:   see docker-compose.yml (needs DATABASE_URL, AUTH_SECRET at minimum).
 
-FROM node:22-slim AS base
+FROM node:25-slim AS base
 WORKDIR /app
 ENV NODE_ENV=production
 
