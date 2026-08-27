@@ -1,5 +1,6 @@
 import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
+import { logger } from "@/lib/logger";
 import type { Prisma } from "@/generated/prisma/client";
 
 /**
@@ -33,6 +34,6 @@ export async function logAudit(params: {
       },
     });
   } catch (error) {
-    console.error("[audit] failed to write audit log entry", error);
+    logger.error({ err: error, action: params.action }, "[audit] failed to write audit log entry");
   }
 }

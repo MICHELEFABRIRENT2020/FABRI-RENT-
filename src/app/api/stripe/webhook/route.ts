@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { stripe, capturePartial } from "@/lib/stripe";
 import { prisma } from "@/lib/prisma";
+import { logger } from "@/lib/logger";
 
 export async function POST(req: NextRequest) {
   const signature = req.headers.get("stripe-signature");
@@ -13,7 +14,7 @@ export async function POST(req: NextRequest) {
     if (!signature || !webhookSecret) throw new Error("Missing Stripe signature or webhook secret");
     event = stripe.webhooks.constructEvent(rawBody, signature, webhookSecret);
   } catch (err) {
-    console.error("[stripe:webhook] signature verification failed", err);
+    logger.error({ err }, "[stripe:webhook] signature verification failed");
     return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
   }
 

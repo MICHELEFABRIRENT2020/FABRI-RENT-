@@ -3,6 +3,7 @@ import { createBookingSchema } from "@/lib/validation/booking";
 import { createBooking, BookingConflictError } from "@/lib/booking-service";
 import { getPublicTenant } from "@/lib/tenant";
 import { rateLimit, RATE_LIMITS, clientIp } from "@/lib/rate-limit";
+import { logger } from "@/lib/logger";
 
 export async function POST(req: NextRequest) {
   const ip = clientIp(req.headers);
@@ -34,7 +35,7 @@ export async function POST(req: NextRequest) {
     if (error instanceof BookingConflictError) {
       return NextResponse.json({ error: error.message }, { status: 409 });
     }
-    console.error("[bookings:POST]", error);
+    logger.error({ err: error }, "[bookings:POST] unexpected error creating booking");
     return NextResponse.json({ error: "Errore durante la creazione della prenotazione" }, { status: 500 });
   }
 }

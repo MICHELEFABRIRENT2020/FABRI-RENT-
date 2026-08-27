@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import { logger } from "@/lib/logger";
 
 /**
  * OTP SMS provider abstraction used by the desk check-in flow.
@@ -24,7 +25,11 @@ export async function sendOtpSms(phone: string, code: string, companyName = "Fab
   if (process.env.SMS_PROVIDER_API_KEY) {
     // TODO: integrate real SMS provider (Twilio/Vonage/etc.) here.
   }
-  console.info(`[otp-provider] SMS a ${phone}: il tuo codice ${companyName} e' ${code}`);
+  // Deliberately in the message string, not a structured field: the whole
+  // point of this dev-mode fallback is to surface the code somewhere
+  // readable when there's no real SMS provider to deliver it - putting it
+  // in a field named "code" would defeat that (see logger.ts redaction).
+  logger.info(`[otp-provider] SMS a ${phone}: il tuo codice ${companyName} e' ${code}`);
 }
 
 export function verifyOtp(phone: string, code: string): boolean {
