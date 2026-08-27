@@ -16,6 +16,7 @@ const NAV = [
   { href: "/desk/blacklist", label: "Blacklist" },
   { href: "/desk/documenti", label: "Documenti" },
   { href: "/desk/cassa", label: "Cassa" },
+  { href: "/desk/assistente", label: "Assistente AI" },
 ];
 
 export default async function DeskLayout({ children }: { children: React.ReactNode }) {
