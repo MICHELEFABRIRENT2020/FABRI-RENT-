@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Search } from "lucide-react";
 import { toast } from "sonner";
 import { createVehicle } from "@/lib/actions/admin-actions";
 import { BrandModelPicker, type BrandModelResult } from "@/components/admin/brand-model-picker";
@@ -26,6 +27,36 @@ export function VehicleForm() {
   const [plate, setPlate] = useState("");
   const [chassisNumber, setChassisNumber] = useState("");
   const [year, setYear] = useState("");
+  const [lookingUpPlate, setLookingUpPlate] = useState(false);
+
+  function handlePlateLookup() {
+    if (!plate.trim()) {
+      toast.error("Inserisci prima la targa.");
+      return;
+    }
+    setLookingUpPlate(true);
+    fetch(`/api/desk/plate-lookup?plate=${encodeURIComponent(plate)}`)
+      .then((r) => r.json())
+      .then((res) => {
+        if (!res.ok) {
+          toast.info(res.reason ?? "Lookup targa non disponibile.");
+          return;
+        }
+        const data = res.data as { brand: string | null; model: string | null; year: number | null; fuelType: string | null; chassisNumber: string | null; category: string | null };
+        if (data.brand) setBrand(data.brand);
+        if (data.model) setModel(data.model);
+        if (data.brand && data.model) setName(`${data.brand} ${data.model}`);
+        if (data.year) setYear(String(data.year));
+        if (data.fuelType) setFuelType(data.fuelType);
+        if (data.chassisNumber) setChassisNumber(data.chassisNumber);
+        if (data.category) setCategory(data.category);
+        setBrandId(undefined);
+        setVehicleModelId(undefined);
+        toast.success("Dati veicolo compilati dal lookup targa.");
+      })
+      .catch(() => toast.error("Errore durante il lookup targa."))
+      .finally(() => setLookingUpPlate(false));
+  }
 
   function handleSubmit() {
     if (!name.trim() || !category.trim() || !dailyRate) {
@@ -136,7 +167,12 @@ export function VehicleForm() {
           </div>
           <div className="space-y-2">
             <Label htmlFor="v-plate">Targa</Label>
-            <Input id="v-plate" value={plate} onChange={(e) => setPlate(e.target.value)} />
+            <div className="flex gap-1">
+              <Input id="v-plate" value={plate} onChange={(e) => setPlate(e.target.value)} className="font-mono uppercase" />
+              <Button type="button" variant="outline" size="icon" onClick={handlePlateLookup} disabled={lookingUpPlate} title="Cerca dati veicolo dalla targa">
+                <Search className="size-4" />
+              </Button>
+            </div>
           </div>
           <div className="space-y-2">
             <Label htmlFor="v-chassis">Telaio</Label>
