@@ -2,27 +2,28 @@
 
 Gestionale SaaS **multi-tenant** per autonoleggio, parcheggio, flotte,
 officina, contratti (con firma digitale), sinistri/danni, multe, blacklist
-GDPR, cassa, fatturazione elettronica e centro notifiche - pensato per essere
-riconfezionato come prodotto commerciale per piu' clienti (tenant), ciascuno
-con le proprie sedi, utenti, flotta e dati, completamente isolati.
+GDPR, cassa, fatturazione elettronica, centro notifiche, assistente AI e
+Commercialista Virtuale - pensato per essere riconfezionato come prodotto
+commerciale per piu' clienti (tenant), ciascuno con le proprie sedi, utenti,
+flotta e dati, completamente isolati.
 
 Stack: **Next.js 16 (App Router, Turbopack) + TypeScript + Tailwind CSS v4 +
-shadcn/ui + PostgreSQL 16 + Prisma 6 + NextAuth v5 + Stripe**. PWA
-installabile (manifest + service worker).
+shadcn/ui + PostgreSQL 16 + Prisma 6 + NextAuth v5 (con 2FA TOTP) + Stripe +
+SumUp**. PWA installabile + shell nativa Capacitor (iOS/Android).
 
-## Indice
+## Documentazione
 
-- [Architettura multi-tenant e ruoli](#architettura-multi-tenant-e-ruoli)
-- [Mappa dei moduli](#mappa-dei-moduli)
-- [Setup locale](#setup-locale)
-- [Credenziali demo](#credenziali-demo-create-da-npm-run-dbseed)
-- [Deploy con Docker](#deploy-con-docker)
-- [Migrazioni database](#migrazioni-database)
-- [Integrazioni esterne](#integrazioni-esterne-cosa-e-reale-cosa-e-stub)
-- [Sicurezza](#sicurezza)
-- [Cosa NON e' stato implementato in questa sessione](#cosa-non-e-stato-implementato-in-questa-sessione)
-- [Test eseguiti](#test-eseguiti)
-- [Comandi utili](#comandi-utili)
+Questo file copre l'overview e il setup rapido. Per il dettaglio:
+
+- [SECURITY.md](./SECURITY.md) - postura di sicurezza completa (auth, 2FA,
+  RBAC, CSRF, rate limiting, validazione, header, segreti, audit trail)
+- [DEPLOYMENT.md](./DEPLOYMENT.md) - deploy, migrazioni, rollback, scalabilita'
+- [INTEGRATIONS.md](./INTEGRATIONS.md) - stato reale di ogni integrazione esterna
+- [TESTING.md](./TESTING.md) - come eseguire ogni suite di test, cosa copre
+- [MOBILE.md](./MOBILE.md) - shell nativa Capacitor, cosa manca per gli store
+- [IMPLEMENTATION_STATUS.md](./IMPLEMENTATION_STATUS.md) - audit funzionalita' per funzionalita'
+- [FINAL_IMPLEMENTATION_REPORT.md](./FINAL_IMPLEMENTATION_REPORT.md) - report finale del programma di lavoro produzione-ready
+- [AUDIT_AFTER_IMPLEMENTATION.md](./AUDIT_AFTER_IMPLEMENTATION.md) - audit indipendente post-implementazione
 
 ## Architettura multi-tenant e ruoli
 
@@ -41,7 +42,7 @@ Ruoli (`UserRole` in `prisma/schema.prisma`), dal piu' al meno privilegiato:
 | `responsabile` | Governance del proprio tenant (no impostazioni sensibili) |
 | `operator` | Back-office desk: check-in/out, contratti, cassa |
 | `officina` | Modulo Officina (interventi, catalogo) |
-| `contabilita` | Cassa, fatture, spese |
+| `contabilita` | Cassa, fatture, spese, Commercialista Virtuale |
 | `visualizzatore` | Sola lettura sul back-office |
 | `client` | Portale pubblico cliente (prenotazioni proprie) |
 
@@ -53,14 +54,19 @@ actions e API route.
 
 **Portale pubblico** (`/`, `/prenota/*`) - prenotazione noleggio/parcheggio,
 motore assicurativo, upload documenti, pagamento Stripe (cauzione + noleggio
-in un'unica PaymentIntent a cattura manuale).
+in un'unica PaymentIntent a cattura manuale), card "Come raggiungerci" con
+geolocalizzazione browser e link Google Maps.
 
 **Back-office Desk** (`/desk/*`, ruoli operativi):
 
 - `/desk` - feed arrivi/partenze, check-in/check-out
 - `/desk/contratti` - contratti di noleggio, generazione PDF contratto
   legale con franchigie configurabili, firma digitale (OTP / link / QR),
-  invio via WhatsApp (`wa.me`), SMS (`sms:`), email
+  invio via WhatsApp (`wa.me`), SMS (`sms:`), email; pannello pagamenti
+  (contanti/POS/bonifico/altro/SumUp) e check-in/checkout su ogni contratto
+- `/desk/contratti/nuovo` - **contratto walk-in**: crea/cerca cliente,
+  seleziona un veicolo specifico disponibile (non "o simile"), assicurazione
+  ed extra, senza passare dal wizard pubblico
 - `/desk/prolungamenti` - Smart Extension Engine
 - `/desk/officina` - interventi meccanica/carrozzeria/gommista/elettrauto,
   catalogo prezzi
@@ -73,16 +79,25 @@ in un'unica PaymentIntent a cattura manuale).
 - `/desk/documenti` - repository documentale trasversale
 - `/desk/cassa` - cassa settimanale (incassi per metodo di pagamento, spese
   per categoria, saldo netto giorno/settimana)
+- `/desk/assistente` - **Assistente AI** (sola lettura: ricerca clienti,
+  veicoli, contratti, statistiche flotta, notifiche)
 
 **Governance Admin** (`/admin/*`, ruoli di direzione):
 
 - `/admin` - dashboard KPI + Dashboard Flotta Live (stato flotta in tempo
   reale, registro noleggi in corso)
-- `/admin/flotta` - anagrafica veicoli compatta (no immagini), assicurazioni,
+- `/admin/flotta` - anagrafica veicoli compatta (no immagini), catalogo
+  globale marche/modelli con ricerca, lookup targa, assicurazioni,
   proprieta'/acquisto, uscita flotta, colori di scadenza compliance
   (bollo/revisione/assicurazione)
 - `/admin/pricing`, `/admin/parcheggio`, `/admin/utenti`,
-  `/admin/impostazioni`, `/admin/report`
+  `/admin/impostazioni` (indirizzo con Google Places autocomplete), `/admin/report`
+- `/admin/commercialista` - **Commercialista Virtuale**: entrate/uscite/IVA/
+  saldo netto calcolati in modo deterministico dai dati reali, anomalie
+  rule-based, sintesi opzionale via AI (mai la fonte dei numeri)
+
+**Sicurezza account** (`/account/sicurezza`, ogni utente autenticato) -
+attivazione/disattivazione 2FA (TOTP), codici di backup monouso.
 
 **Centro notifiche** (campanella in ogni header desk/admin,
 `src/lib/notifications.ts`) - calcolato "on read" ad ogni caricamento di
@@ -100,12 +115,14 @@ npm install                 # esegue anche `prisma generate` (postinstall)
 cp .env.example .env        # valorizza DATABASE_URL e AUTH_SECRET
 npm run db:migrate          # applica le migration Prisma
 npm run db:seed             # crea tenant demo, utenti, flotta, tariffe
+npm run db:seed-catalog     # popola il catalogo globale marche/modelli (idempotente)
 npm run dev                 # http://localhost:3000
 ```
 
 ### Credenziali demo (create da `npm run db:seed`)
 
-Tenant demo: **Fabri Rent Campania**.
+Tenant demo: **Fabri Rent Campania**. Nessun account demo ha 2FA attiva
+di default (attivabile da `/account/sicurezza`).
 
 | Ruolo | Email | Password |
 | --- | --- | --- |
@@ -114,149 +131,115 @@ Tenant demo: **Fabri Rent Campania**.
 | Officina | `officina@fabrirent.it` | `FabriOfficina!2026` |
 | Contabilita' | `contabilita@fabrirent.it` | `FabriConta!2026` |
 
-## Deploy con Docker
+## Deploy
+
+Vedi [DEPLOYMENT.md](./DEPLOYMENT.md) per la guida completa (Docker,
+deploy diretto, migrazioni, rollback, scalabilita'). In breve:
 
 ```bash
-cp .env.example .env
-# valorizza almeno AUTH_SECRET (openssl rand -base64 32) nel .env
+cp .env.example .env && # valorizza almeno AUTH_SECRET (openssl rand -base64 32)
 docker compose build
 docker compose up -d db
-docker compose run --rm app npx prisma migrate deploy   # migrazioni, una tantum
-docker compose run --rm app npm run db:seed              # opzionale: dati demo
+docker compose run --rm app npx prisma migrate deploy
 docker compose up -d
+curl http://localhost:3000/api/health
 ```
 
-`docker-compose.yml` avvia Postgres 16 (`db`) e l'app in modalita' standalone
-Next.js (`app`, immagine da `Dockerfile` multi-stage). Le migrazioni
-**non** vengono eseguite automaticamente all'avvio del container - e' una
-scelta deliberata per non rischiare una `migrate deploy` non supervisionata
-contro un database di produzione: vanno lanciate a mano (comando sopra) dopo
-aver verificato il piano di migrazione.
+## Integrazioni esterne
 
-## Migrazioni database
-
-L'unica migration presente (`20260827112748_init_multi_tenant`) e' uno
-squash pulito: in questa sessione di sviluppo il database conteneva solo
-dati seed generati da questo stesso progetto, quindi ricreare lo schema da
-zero era sicuro. **Per un ambiente con dati reali**, qualunque futura
-modifica che introduca colonne `NOT NULL` su tabelle popolate va fatta con
-il pattern a stadi (colonna nullable -> backfill applicativo -> `NOT NULL`),
-mai con `prisma migrate reset` o con una migration che droppa colonne con
-dati.
-
-## Integrazioni esterne (cosa e' reale, cosa e' stub)
-
-Filosofia del progetto: ogni integrazione ha un'interfaccia utente completa
-e un livello di servizio dedicato in `src/lib/`; se la variabile d'ambiente
-richiesta non e' impostata, la funzione restituisce un esito onesto
-"non configurato" (mai un finto successo, mai dati inventati) e la UI
-ricade sempre su un percorso manuale.
-
-**Realmente funzionanti senza credenziali aggiuntive:**
-
-- **WhatsApp** - link `wa.me` diretto per inviare il link di firma contratto
-- **SMS** - URI `sms:` per l'invio manuale da telefono
-- **Upload documenti** (`src/lib/storage.ts`) - salvataggio su disco locale
-  in `public/uploads/`
-
-**Configurabili via `.env` (vedi `.env.example`), con fallback esplicito:**
-
-| Servizio | Variabile | Senza chiave |
-| --- | --- | --- |
-| Stripe | `STRIPE_SECRET_KEY` / `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` / `STRIPE_WEBHOOK_SECRET` | creazione PaymentIntent/conferma pagamento fallisce lato client (atteso) |
-| OTP SMS | `SMS_PROVIDER_API_KEY` | codice OTP stampato nei log server |
-| Email | `EMAIL_PROVIDER_API_KEY` | email (contratti, report danni) loggate invece di spedite |
-| OCR / AI Vision (`src/lib/ocr-provider.ts`) | `AI_VISION_API_KEY` | scanner documenti mostra "OCR non configurato", form ricade su inserimento manuale |
-| Fatturazione elettronica SDI (`src/lib/aruba.ts`) | `ARUBA_SDI_API_KEY` / `ARUBA_SDI_ENDPOINT` | XML fattura generato, invio bloccato con errore esplicito, fattura resta in stato "draft" |
-
-**Riservate per integrazioni future, non ancora lette da alcun codice**
-(documentate in `.env.example` per chi riprendera' il lavoro):
-`SUMUP_API_KEY`, `GOOGLE_MAPS_API_KEY`, `GPS_PROVIDER_API_KEY`,
-`TARGA_LOOKUP_API_KEY` - vedi la sezione successiva per il contesto.
+Vedi [INTEGRATIONS.md](./INTEGRATIONS.md) per lo stato dettagliato di
+ognuna (Stripe, SumUp, Google Maps, geolocalizzazione, Assistente AI,
+OTP SMS, email, OCR/AI Vision, fatturazione elettronica SDI, lookup
+targa). Filosofia comune: interfaccia e livello di servizio sempre
+completi; senza credenziale, un esito onesto "non configurato" - mai un
+finto successo, mai dati inventati.
 
 ## Sicurezza
 
-- Nessun segreto hardcoded: tutte le chiavi/API key passano da variabili
-  d'ambiente (`.env`, mai committato - vedi `.gitignore`).
-- Token OTP e link di firma generati con `crypto.randomInt`/`randomBytes`
-  (Node `crypto`, CSPRNG), mai con generatori pseudocasuali non sicuri.
-- Password utente hashate con `bcryptjs`.
-- Ogni azione sensibile (mutazioni desk/admin, incluse le letture della
-  Blacklist per compliance GDPR) passa da `logAudit()` (`src/lib/audit.ts`):
-  tenant, attore, azione, entita', IP, metadata, timestamp.
-- Ogni server action verifica ruolo (`assertRole`/`WRITE_ROLES`/...) *e*
-  tenant (`assertTenant`) prima di leggere/scrivere.
-- Password demo fornite solo per l'ambiente di sviluppo: da ruotare prima
-  di qualunque esposizione pubblica.
+Vedi [SECURITY.md](./SECURITY.md) per il dettaglio completo. In sintesi:
+2FA TOTP + lockout brute-force sul login, RBAC verificato su ogni server
+action, rate limiting su ogni endpoint sensibile/costoso, validazione
+magic-byte sugli upload, header di sicurezza (CSP/HSTS/ecc.), segreti
+mai hardcoded, audit trail su ogni scrittura sensibile e sulle letture
+Blacklist.
 
-## Cosa NON e' stato implementato in questa sessione
+## Test
 
-Elenco onesto delle richieste della spec che sono state **scaffolded solo a
-livello di interfaccia/modello dati** (o non affrontate), da riprendere in
-un secondo momento:
+Vedi [TESTING.md](./TESTING.md). In breve:
 
-- Database globale marche/modelli veicolo con autocomplete
-- Lookup targa -> dati veicolo via API esterna (motorizzazione)
-- Integrazione Google Maps (Places/Geocoding) per indirizzi/geolocalizzazione
-- Tracciamento GPS live dei veicoli (il campo `gpsDeviceId` esiste a schema,
-  nessun provider e' collegato)
-- Assistente AI conversazionale
-- Modulo "Commercialista Virtuale" (analytics fiscali)
-- Pubblicazione nativa iOS/Android (l'app e' installabile come PWA, non
-  pubblicata sugli store)
-- Pipeline CI/CD
-- Suite di test automatizzati (unit/e2e) - la verifica in questa sessione e'
-  stata manuale: typecheck, build, lint, smoke test Playwright mirati
-- Autenticazione a due fattori (2FA) per lo staff
-- Rate limiting / protezione CSRF dedicati oltre a quanto NextAuth fornisce
-  di default
-- Integrazione reale SumUp (il metodo di pagamento esiste come opzione in
-  cassa, ma non c'e' un client API SumUp collegato)
-- Flusso di creazione contratto "walk-in" lato desk separato dal wizard
-  pubblico (il desk oggi opera sulle prenotazioni gia' create dal portale)
+```bash
+npm run test               # unit (Vitest)
+npm run test:integration   # integration (richiede DATABASE_URL)
+npm run test:e2e           # E2E (Playwright)
+npx tsc --noEmit && npm run lint && npm run build
+```
 
-## Test eseguiti
+## Cosa NON e' stato implementato
 
-Ad ogni modulo completato in questa sessione:
+Elenco onesto, aggiornato dopo il programma di lavoro produzione-ready
+(vedi [FINAL_IMPLEMENTATION_REPORT.md](./FINAL_IMPLEMENTATION_REPORT.md)
+per il dettaglio completo):
 
-- `npx tsc --noEmit` (typecheck completo)
-- `npm run build` (build di produzione Next.js/Turbopack)
-- `npm run lint` (ESLint)
-- Screenshot/flow manuali con Playwright + Chromium per i moduli con UI
-  significativa (dashboard, centro notifiche, contratti, cassa, ecc.)
-
-Tutti verdi all'ultima verifica.
+- Tracciamento GPS live via hardware sui veicoli (nessun provider di
+  telematica scelto - la geolocalizzazione browser sul sito pubblico e'
+  invece reale e implementata)
+- Pubblicazione effettiva sugli store iOS/Android (la shell nativa
+  Capacitor esiste - vedi [MOBILE.md](./MOBILE.md) - ma servono account
+  sviluppatore reali, certificati di firma e una build su macchine con
+  Xcode/Android SDK)
+- Suite di test per Officina/Danni/Sinistri/Multe/Blacklist/Documenti/
+  Cassa (verificati manualmente durante lo sviluppo, non con test
+  automatici committati - vedi TESTING.md)
+- Test automatizzati per le chiamate reali a Stripe/SumUp (nessuna
+  credenziale sandbox disponibile in questa sessione)
+- 2FA per l'assistente AI o l'accesso M2M (l'assistente e' gia' in sola
+  lettura per design, non serve una conferma aggiuntiva)
+- Rate limiting distribuito di default (in-memory finche' `REDIS_URL`
+  non e' impostata - vedi SECURITY.md)
+- Deploy automatico dopo la CI (la pipeline builda e testa; il deploy
+  verso un hosting specifico non e' stato scelto/configurato)
 
 ## Comandi utili
 
 ```bash
-npm run build       # build di produzione
-npm run lint         # ESLint
-npm run db:studio    # Prisma Studio (browser DB)
-npm run db:seed      # ri-esegue il seed (idempotente per email)
+npm run build          # build di produzione
+npm run lint            # ESLint
+npm run db:studio       # Prisma Studio (browser DB)
+npm run db:seed         # ri-esegue il seed (idempotente per email)
+npm run db:seed-catalog # ri-esegue il seed del catalogo marche/modelli
+npm run cap:sync        # sincronizza la shell nativa Capacitor
 ```
 
 ## Architettura dati
 
 Schema completo in `prisma/schema.prisma`: `Tenant`/`Location`, `User` (con
-ruolo e tenant/sede), `Vehicle` + `VehicleInsurancePolicy`, `Booking`
-(contratti noleggio e parcheggio), `WorkshopCatalogItem`/
-`WorkshopIntervention`, `DamageRecord`, `Claim`, `BlacklistEntry`, `Fine` +
-`IssuingAuthority`, `Document`, `Invoice`, `Expense`, `Notification`,
-`AuditLog`.
+ruolo, tenant/sede, 2FA), `Vehicle` + `VehicleBrand`/`VehicleModel` (catalogo
+globale) + `VehicleInsurancePolicy`, `Booking` (contratti noleggio e
+parcheggio), `WorkshopCatalogItem`/`WorkshopIntervention`, `DamageRecord`,
+`Claim`, `BlacklistEntry`, `Fine` + `IssuingAuthority`, `Document`,
+`Invoice`, `Expense`, `Payment` (Stripe/SumUp/contanti/POS/bonifico),
+`Notification`, `AuditLog`, `AiInteractionLog`.
 
 Logica di business in `src/lib/`:
 
 - `session.ts` - RBAC, scoping tenant
+- `auth.ts` - autenticazione, lockout, 2FA
+- `totp.ts` / `crypto-secret.ts` - 2FA TOTP e cifratura segreti a riposo
+- `rate-limit.ts` - rate limiting pluggable (in-memory/Redis)
 - `audit.ts` - audit log
 - `notifications.ts` - centro notifiche calcolato on-read
 - `rental-time.ts` / `pricing-engine.ts` / `insurance*.ts` /
   `fleet-engine.ts` / `parking-engine.ts` - motori di dominio (slot, tariffe
   dinamiche, assicurazione, assegnazione "o simile", capienza parcheggio)
-- `stripe.ts` - PaymentIntent combinata cauzione+noleggio, cattura parziale
+- `stripe.ts` / `sumup.ts` - pagamenti
+- `plate-lookup.ts` - lookup targa (provider-based)
+- `maps.ts` / `geo.ts` - geocoding, distanza, link direzioni
+- `ai-assistant.ts` - Assistente AI (tool layer)
+- `commercialista.ts` - Commercialista Virtuale (calcoli deterministici)
 - `pdf.ts` - generazione PDF (contratto legale, report/ticket danni,
   fattura, ricorso multa)
 - `ocr-provider.ts`, `aruba.ts`, `otp-provider.ts`, `email-provider.ts` -
-  integrazioni esterne "stub ma reali" (vedi sopra)
+  integrazioni esterne "stub ma reali" (vedi INTEGRATIONS.md)
 - `week.ts` - cassa settimanale
 - `compliance.ts` - colori scadenza bollo/revisione/assicurazione
+- `logger.ts` - logging strutturato (pino, con redazione segreti)
