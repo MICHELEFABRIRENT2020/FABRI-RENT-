@@ -1,9 +1,12 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import crypto from "node:crypto";
+import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { assertTenant, ADMIN_ROLES } from "@/lib/session";
 import { logAudit } from "@/lib/audit";
+import type { AppUserRole } from "@/types/next-auth";
 import type { ParkingCategory, ParkingSlotType, PricingRuleType, PricingScope, VehicleStatus } from "@/generated/prisma/client";
 
 async function assertAdmin() {
@@ -154,4 +157,104 @@ export async function deleteVehicle(id: string) {
   await prisma.vehicle.delete({ where: { id, tenantId } });
   await logAudit({ tenantId, actorId: user.id, action: "vehicle_deleted", entityType: "vehicle", entityId: id });
   revalidatePath("/admin/flotta");
+}
+
+// ---------------------------------------------------------------------------
+// Staff / utenti (section 28: RBAC, più operatori)
+// ---------------------------------------------------------------------------
+
+const STAFF_ASSIGNABLE_ROLES: AppUserRole[] = [
+  "admin",
+  "responsabile",
+  "operator",
+  "officina",
+  "contabilita",
+  "visualizzatore",
+];
+
+export async function createStaffUser(params: {
+  fullName: string;
+  email: string;
+  phone: string;
+  role: AppUserRole;
+}) {
+  const { user, tenantId } = await assertAdmin();
+  if (!STAFF_ASSIGNABLE_ROLES.includes(params.role)) throw new Error("Ruolo non valido.");
+
+  const temporaryPassword = crypto.randomBytes(9).toString("base64url");
+  const passwordHash = await bcrypt.hash(temporaryPassword, 10);
+
+  const staff = await prisma.user.create({
+    data: {
+      tenantId,
+      fullName: params.fullName,
+      email: params.email,
+      phone: params.phone,
+      role: params.role,
+      passwordHash,
+    },
+  });
+
+  await logAudit({ tenantId, actorId: user.id, action: "staff_user_created", entityType: "user", entityId: staff.id, metadata: { role: params.role } });
+  revalidatePath("/admin/utenti");
+  return { temporaryPassword };
+}
+
+export async function updateStaffUserRole(id: string, role: AppUserRole) {
+  const { user, tenantId } = await assertAdmin();
+  if (!STAFF_ASSIGNABLE_ROLES.includes(role)) throw new Error("Ruolo non valido.");
+
+  await prisma.user.update({ where: { id, tenantId }, data: { role } });
+  await logAudit({ tenantId, actorId: user.id, action: "staff_user_role_updated", entityType: "user", entityId: id, metadata: { role } });
+  revalidatePath("/admin/utenti");
+}
+
+export async function resetStaffPassword(id: string) {
+  const { user, tenantId } = await assertAdmin();
+  const temporaryPassword = crypto.randomBytes(9).toString("base64url");
+  const passwordHash = await bcrypt.hash(temporaryPassword, 10);
+
+  await prisma.user.update({ where: { id, tenantId }, data: { passwordHash } });
+  await logAudit({ tenantId, actorId: user.id, action: "staff_password_reset", entityType: "user", entityId: id });
+  revalidatePath("/admin/utenti");
+  return { temporaryPassword };
+}
+
+// ---------------------------------------------------------------------------
+// Impostazioni contratto (franchigie configurabili, section 5)
+// ---------------------------------------------------------------------------
+
+export async function updateContractSettings(params: {
+  franchigiaRcaAmount: number;
+  franchigiaRcaPercent: number;
+  franchigiaKaskoAmount: number;
+  franchigiaKaskoPercent: number;
+  franchigiaFurtoAmount: number;
+  franchigiaFurtoPercent: number;
+  franchigiaIncendioAmount: number;
+  franchigiaIncendioPercent: number;
+  franchigiaDanniAmount: number;
+  franchigiaDanniPercent: number;
+  maintenanceIntervalKm: number;
+}) {
+  const { user, tenantId } = await assertAdmin();
+  await prisma.tenant.update({ where: { id: tenantId }, data: params });
+  await logAudit({ tenantId, actorId: user.id, action: "contract_settings_updated", entityType: "tenant", entityId: tenantId });
+  revalidatePath("/admin/impostazioni");
+}
+
+export async function updateTenantProfile(params: { name: string; vatNumber?: string; pec?: string; sdiCode?: string; address?: string }) {
+  const { user, tenantId } = await assertAdmin();
+  await prisma.tenant.update({
+    where: { id: tenantId },
+    data: {
+      name: params.name,
+      vatNumber: params.vatNumber || null,
+      pec: params.pec || null,
+      sdiCode: params.sdiCode || null,
+      address: params.address || null,
+    },
+  });
+  await logAudit({ tenantId, actorId: user.id, action: "tenant_profile_updated", entityType: "tenant", entityId: tenantId });
+  revalidatePath("/admin/impostazioni");
 }

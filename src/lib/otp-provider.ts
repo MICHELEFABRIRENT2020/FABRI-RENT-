@@ -20,11 +20,11 @@ export function generateOtp(phone: string): string {
   return code;
 }
 
-export async function sendOtpSms(phone: string, code: string): Promise<void> {
+export async function sendOtpSms(phone: string, code: string, companyName = "FabriGroup Rent Manager"): Promise<void> {
   if (process.env.SMS_PROVIDER_API_KEY) {
     // TODO: integrate real SMS provider (Twilio/Vonage/etc.) here.
   }
-  console.info(`[otp-provider] SMS a ${phone}: il tuo codice Fabri GROUP e' ${code}`);
+  console.info(`[otp-provider] SMS a ${phone}: il tuo codice ${companyName} e' ${code}`);
 }
 
 export function verifyOtp(phone: string, code: string): boolean {

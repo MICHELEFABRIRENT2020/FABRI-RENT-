@@ -8,7 +8,7 @@ export default function LoginPage() {
       <Card className="w-full max-w-sm">
         <CardHeader>
           <CardTitle>Accedi</CardTitle>
-          <CardDescription>Fabri GROUP - Area riservata desk e amministrazione</CardDescription>
+          <CardDescription>FabriGroup Rent Manager - Area riservata desk e amministrazione</CardDescription>
         </CardHeader>
         <CardContent>
           <Suspense>

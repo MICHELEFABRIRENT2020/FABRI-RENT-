@@ -1,8 +1,10 @@
+import type { Metadata } from "next";
 import { BookingWidget } from "@/components/booking/booking-widget";
 import { SiteHeader } from "@/components/site/site-header";
 import { SiteFooter } from "@/components/site/site-footer";
 import { Card, CardContent } from "@/components/ui/card";
 import { ShieldCheck, Clock, MapPin, CreditCard } from "lucide-react";
+import { getPublicTenant } from "@/lib/tenant";
 
 const HIGHLIGHTS = [
   {
@@ -18,7 +20,7 @@ const HIGHLIGHTS = [
   {
     icon: MapPin,
     title: "Un'unica sede",
-    description: "Ritiro e riconsegna sempre in Via Privata Detta Sacra 33.",
+    description: "Ritiro e riconsegna sempre nella nostra sede principale.",
   },
   {
     icon: CreditCard,
@@ -27,22 +29,27 @@ const HIGHLIGHTS = [
   },
 ];
 
-export default function Home() {
+export async function generateMetadata(): Promise<Metadata> {
+  const tenant = await getPublicTenant();
+  return { title: `${tenant.name} - Noleggio Auto & Parcheggio` };
+}
+
+export default async function Home() {
+  const tenant = await getPublicTenant();
+
   return (
     <>
       <SiteHeader />
       <main className="flex flex-1 flex-col">
         <section className="relative flex flex-col items-center gap-10 overflow-hidden bg-gradient-to-b from-primary/10 via-background to-background px-4 py-16 sm:py-24">
           <div className="max-w-2xl text-center">
-            <p className="mb-3 text-sm font-medium uppercase tracking-wide text-primary">
-              Fabri GROUP - Fabri Rent Campania
-            </p>
+            <p className="mb-3 text-sm font-medium uppercase tracking-wide text-primary">{tenant.name}</p>
             <h1 className="text-balance text-4xl font-bold tracking-tight sm:text-5xl">
               Noleggio auto e parcheggio, tutto in un&apos;unica piattaforma
             </h1>
             <p className="mt-4 text-pretty text-muted-foreground sm:text-lg">
-              Prenota in pochi click il tuo veicolo o il tuo posto auto presso la nostra
-              sede di Via Privata Detta Sacra 33.
+              Prenota in pochi click il tuo veicolo o il tuo posto auto presso la nostra sede
+              {tenant.address ? ` di ${tenant.address}` : ""}.
             </p>
           </div>
           <BookingWidget />

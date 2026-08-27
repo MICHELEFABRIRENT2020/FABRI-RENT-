@@ -59,10 +59,11 @@ export async function reviewDocument(params: {
 // ---------------------------------------------------------------------------
 
 export async function requestCheckInOtp(phone: string) {
-  const { user } = await assertTenant();
+  const { user, tenantId } = await assertTenant();
   assertOperational(user.role);
+  const tenant = await prisma.tenant.findUniqueOrThrow({ where: { id: tenantId } });
   const code = generateOtp(phone);
-  await sendOtpSms(phone, code);
+  await sendOtpSms(phone, code, tenant.name);
   return { sent: true };
 }
 
@@ -109,7 +110,10 @@ export async function checkInBooking(params: {
 
   let reportPdfUrl: string | undefined;
   if (params.damagePhotoUrls.length > 0 || params.damageNotes) {
+    const tenant = await prisma.tenant.findUniqueOrThrow({ where: { id: tenantId } });
     const pdfBytes = await generateDamageReportPdf({
+      companyName: tenant.name,
+      location: booking.location,
       bookingId: booking.id,
       vehicleName: booking.vehicle?.name ?? "Parcheggio",
       customerName: booking.user.fullName,
@@ -129,7 +133,7 @@ export async function checkInBooking(params: {
 
     await sendEmail({
       to: booking.user.email,
-      subject: "FabriGroup Rent Manager - Report danni preesistenti e contratto di noleggio",
+      subject: `${tenant.name} - Report danni preesistenti e contratto di noleggio`,
       html: `<p>Gentile ${booking.user.fullName}, in allegato il report fotografico e il contratto di noleggio relativo alla prenotazione ${booking.id}.</p>`,
       attachments: [{ filename: "report-contratto.pdf", content: Buffer.from(pdfBytes), contentType: "application/pdf" }],
     });
@@ -201,7 +205,9 @@ export async function checkOutBooking(params: {
   });
 
   if (params.damageDescription) {
+    const tenant = await prisma.tenant.findUniqueOrThrow({ where: { id: tenantId } });
     const pdfBytes = await generateDamageTicketPdf({
+      companyName: tenant.name,
       bookingId: booking.id,
       vehicleName: booking.vehicle?.name ?? "Parcheggio",
       customerName: booking.user.fullName,
@@ -222,7 +228,7 @@ export async function checkOutBooking(params: {
 
     await sendEmail({
       to: booking.user.email,
-      subject: "FabriGroup Rent Manager - Report danni al check-out",
+      subject: `${tenant.name} - Report danni al check-out`,
       html: `<p>Gentile ${booking.user.fullName}, in allegato il report danni riscontrati al rientro del veicolo (prenotazione ${booking.id}).</p>`,
       attachments: [{ filename: "report-danni.pdf", content: Buffer.from(pdfBytes), contentType: "application/pdf" }],
     });

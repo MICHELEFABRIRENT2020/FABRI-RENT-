@@ -4,7 +4,7 @@ import { formatItalianDate } from "@/lib/rental-time";
 const PAGE_MARGIN = 50;
 const LINE_HEIGHT = 18;
 
-async function buildDocument(title: string, lines: string[]): Promise<Uint8Array> {
+async function buildDocument(companyName: string, title: string, lines: string[]): Promise<Uint8Array> {
   const pdfDoc = await PDFDocument.create();
   const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
   const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
@@ -12,7 +12,7 @@ async function buildDocument(title: string, lines: string[]): Promise<Uint8Array
   let page = pdfDoc.addPage([595.28, 841.89]); // A4
   let y = page.getHeight() - PAGE_MARGIN;
 
-  page.drawText("Fabri GROUP - Fabri Rent Campania", {
+  page.drawText(companyName, {
     x: PAGE_MARGIN,
     y,
     size: 10,
@@ -37,6 +37,8 @@ async function buildDocument(title: string, lines: string[]): Promise<Uint8Array
 }
 
 export async function generateDamageReportPdf(params: {
+  companyName: string;
+  location: string;
   bookingId: string;
   vehicleName: string;
   customerName: string;
@@ -44,12 +46,12 @@ export async function generateDamageReportPdf(params: {
   photoCount: number;
   createdAt: Date;
 }): Promise<Uint8Array> {
-  return buildDocument("Report Danni Preesistenti + Contratto di Noleggio", [
+  return buildDocument(params.companyName, "Report Danni Preesistenti + Contratto di Noleggio", [
     `Prenotazione: ${params.bookingId}`,
     `Cliente: ${params.customerName}`,
     `Veicolo: ${params.vehicleName}`,
     `Data check-in: ${formatItalianDate(params.createdAt)}`,
-    `Sede: Via Privata Detta Sacra 33`,
+    `Sede: ${params.location}`,
     "",
     `Foto allegate: ${params.photoCount}`,
     "",
@@ -62,6 +64,7 @@ export async function generateDamageReportPdf(params: {
 }
 
 export async function generateDamageTicketPdf(params: {
+  companyName: string;
   bookingId: string;
   vehicleName: string;
   customerName: string;
@@ -69,7 +72,7 @@ export async function generateDamageTicketPdf(params: {
   depositWithheldAmount: number;
   createdAt: Date;
 }): Promise<Uint8Array> {
-  return buildDocument("Report Danni al Check-out (Ticket Danno)", [
+  return buildDocument(params.companyName, "Report Danni al Check-out (Ticket Danno)", [
     `Prenotazione: ${params.bookingId}`,
     `Cliente: ${params.customerName}`,
     `Veicolo: ${params.vehicleName}`,
@@ -82,4 +85,59 @@ export async function generateDamageTicketPdf(params: {
     "",
     "Nota: il presente report descrittivo non include documentazione fotografica.",
   ]);
+}
+
+export async function generateRentalContractPdf(params: {
+  companyName: string;
+  companyVatNumber: string | null;
+  location: string;
+  contractNumber: number | null;
+  bookingId: string;
+  customerName: string;
+  customerFiscalCode: string | null;
+  vehicleName: string;
+  plate: string | null;
+  startDate: Date;
+  endDate: Date;
+  totalPrice: number;
+  depositAmount: number;
+  franchigie: { label: string; amount: number; percent: number }[];
+  authorizedDrivers: { fullName: string; licenseNumber?: string }[];
+}): Promise<Uint8Array> {
+  const lines = [
+    `Contratto n. ${params.contractNumber ?? params.bookingId}`,
+    `Locatore: ${params.companyName}${params.companyVatNumber ? ` - P.IVA ${params.companyVatNumber}` : ""}`,
+    `Sede: ${params.location}`,
+    "",
+    `Locatario: ${params.customerName}${params.customerFiscalCode ? ` - CF ${params.customerFiscalCode}` : ""}`,
+    "",
+    `Veicolo: ${params.vehicleName}${params.plate ? ` - Targa ${params.plate}` : ""}`,
+    `Periodo: dal ${formatItalianDate(params.startDate)} al ${formatItalianDate(params.endDate)}`,
+    `Prezzo totale: EUR ${params.totalPrice.toFixed(2)}`,
+    `Cauzione: EUR ${params.depositAmount.toFixed(2)}`,
+    "",
+    "Conducenti autorizzati:",
+    ...(params.authorizedDrivers.length > 0
+      ? params.authorizedDrivers.map((d) => `- ${d.fullName}${d.licenseNumber ? ` (patente ${d.licenseNumber})` : ""}`)
+      : ["- Solo il locatario"]),
+    "",
+    "Franchigie:",
+    ...params.franchigie.map((f) => `- ${f.label}: EUR ${f.amount.toFixed(2)} (${f.percent.toFixed(0)}%)`),
+    "",
+    "Il locatario dichiara di aver ricevuto il veicolo nello stato descritto nel",
+    "verbale fotografico allegato e si impegna alla riconsegna nei termini",
+    "pattuiti. Sono a carico del locatario km extra, carburante mancante,",
+    "pulizia straordinaria, multe, pedaggi e danni non coperti dalle",
+    "franchigie sopra indicate. Furto, incendio, Kasko, RCA e assistenza",
+    "stradale sono regolati dalla polizza assicurativa del veicolo.",
+    "",
+    "Il presente documento e' generato automaticamente a partire dai dati",
+    "del contratto e non sostituisce una revisione legale. Si raccomanda",
+    "la validazione delle clausole da parte di un professionista abilitato",
+    "prima dell'utilizzo commerciale.",
+    "",
+    "Firma locatario: ___________________________",
+  ];
+
+  return buildDocument(params.companyName, "Contratto di Noleggio", lines);
 }

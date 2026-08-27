@@ -14,8 +14,6 @@ import {
 import type { CreateBookingInput } from "@/lib/validation/booking";
 import type { DocumentType, Prisma } from "@/generated/prisma/client";
 
-const HQ_LOCATION = "Via Privata Detta Sacra 33";
-
 export class BookingConflictError extends Error {}
 
 async function upsertCustomer(tenantId: string, customer: CreateBookingInput["customer"]) {
@@ -88,6 +86,7 @@ export async function createBooking(tenantId: string, input: CreateBookingInput)
   const startDate = new Date(input.startDate);
   const endDate = new Date(input.endDate);
   const days = computeBillableDays(startDate, endDate);
+  const tenant = await prisma.tenant.findUniqueOrThrow({ where: { id: tenantId } });
   const customerUser = await upsertCustomer(tenantId, input.customer);
   const extrasResult = await computeExtrasPrice(tenantId, input.extras, days);
   const bookingId = crypto.randomUUID();
@@ -126,7 +125,7 @@ export async function createBooking(tenantId: string, input: CreateBookingInput)
       vehicle: { connect: { id: vehicle.id } },
       startDate,
       endDate,
-      location: HQ_LOCATION,
+      location: tenant.address ?? "",
       insuranceOption: { connect: { id: insuranceOption.id } },
       basePrice,
       insurancePrice,
@@ -221,7 +220,7 @@ export async function createBooking(tenantId: string, input: CreateBookingInput)
     keysLeft: input.keysLeft,
     startDate,
     endDate,
-    location: HQ_LOCATION,
+    location: tenant.address ?? "",
     basePrice,
     extrasPrice: extrasResult.total,
     totalPrice,

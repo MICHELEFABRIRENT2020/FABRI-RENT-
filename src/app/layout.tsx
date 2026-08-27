@@ -16,9 +16,12 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Fabri GROUP - Noleggio Auto & Parcheggio Campania",
+  title: {
+    default: "FabriGroup Rent Manager",
+    template: "%s | FabriGroup Rent Manager",
+  },
   description:
-    "Fabri Rent Campania - noleggio auto, parcheggio Parking Go e servizi di mobilita' in Via Privata Detta Sacra 33.",
+    "FabriGroup Rent Manager - gestionale SaaS per autonoleggio, flotte, officina, contratti, pagamenti e fatturazione.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
