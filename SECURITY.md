@@ -113,14 +113,14 @@ sensibili (consultazione Blacklist, lookup targa) per compliance GDPR.
 
 ## Dipendenze
 
-`npm audit` segnala 6 avvisi (3 moderate, 3 high) tutti in dipendenze
-transitive di `prisma`/`exceljs` (non introdotte da questa sessione).
-Prisma e' volutamente pinnato su 6.19.3 (stabile) invece della 8.0 RC per
-non introdurre instabilita' in un progetto gia' in produzione - da
-rivalutare quando esce una versione stabile che risolve l'avviso. Nessuna
-delle vulnerabilità segnalate è sfruttabile lato server in questo progetto
-(riguardano `deepmerge-ts`/`uuid`/`valibot` usati in percorsi di build/
-tooling, non nel runtime che serve richieste utente).
+`npm audit` segnala 8 avvisi (5 moderate, 3 high), tutti in dipendenze
+transitive di `prisma`/`exceljs`/`@capacitor/cli` (nessuna sfruttabile
+lato server: riguardano `deepmerge-ts`/`uuid`/`valibot`/`xcode`, usati in
+percorsi di build/tooling - CLI Prisma, generazione Excel, generazione
+progetto Xcode - mai nel runtime che serve richieste utente). Prisma e'
+volutamente pinnato su 6.19.3 (stabile) invece della 8.0 RC per non
+introdurre instabilita' in un progetto gia' in produzione - da rivalutare
+quando esce una versione stabile che risolve l'avviso.
 
 ## Cosa NON e' incluso (limiti onesti)
 
