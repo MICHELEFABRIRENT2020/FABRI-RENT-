@@ -16,7 +16,7 @@ import Stripe from "stripe";
  * falliranno ma l'app resta compilabile e navigabile: usare le route API
  * che avvolgono queste funzioni con gestione errori per l'ambiente demo.
  */
-export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY ?? "sk_test_placeholder", {
+export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "sk_test_placeholder", {
   apiVersion: "2026-08-26.dahlia",
 });
 
