@@ -4,6 +4,7 @@ import { requireTenant } from "@/lib/session";
 import { VehicleEditForm } from "@/components/admin/vehicle-edit-form";
 import { InsurancePolicyPanel } from "@/components/admin/insurance-policy-panel";
 import { VehicleExitPanel } from "@/components/admin/vehicle-exit-panel";
+import { VehicleDocumentScanner } from "@/components/admin/vehicle-document-scanner";
 
 export default async function VehicleDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -68,6 +69,8 @@ export default async function VehicleDetailPage({ params }: { params: Promise<{ 
           gpsTracking: p.gpsTracking,
         }))}
       />
+
+      <VehicleDocumentScanner />
 
       <VehicleExitPanel
         vehicleId={vehicle.id}

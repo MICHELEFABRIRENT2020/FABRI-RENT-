@@ -141,6 +141,12 @@ export function ParkingCheckoutWizard({
                   <DocumentUploader
                     values={documents}
                     onChange={(key, url) => setDocuments((d) => ({ ...d, [key]: url }))}
+                    onExtracted={(fields) =>
+                      setInvoice((prev) => ({
+                        ...prev,
+                        fullName: prev.fullName || [fields.firstName, fields.lastName].filter(Boolean).join(" "),
+                      }))
+                    }
                   />
                 </div>
               </div>
