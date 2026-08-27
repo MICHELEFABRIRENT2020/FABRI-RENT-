@@ -34,6 +34,9 @@ export function UserNav({ user }: { user: { name?: string | null; role: AppUserR
           <Link href={homeFor(user.role)}>Pannello</Link>
         </Button>
       )}
+      <Button asChild variant="ghost" size="sm">
+        <Link href="/account/sicurezza">Sicurezza</Link>
+      </Button>
       <Button variant="outline" size="sm" onClick={() => signOut({ callbackUrl: "/" })}>
         Esci
       </Button>

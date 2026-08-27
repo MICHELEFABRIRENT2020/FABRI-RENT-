@@ -4,6 +4,8 @@ import { auth } from "@/lib/auth";
 import { getPublicTenant } from "@/lib/tenant";
 import { saveFile } from "@/lib/storage";
 import { extractDocumentFields, type ScannedDocumentKind } from "@/lib/ocr-provider";
+import { isValidUpload } from "@/lib/file-validation";
+import { rateLimit, RATE_LIMITS, clientIp } from "@/lib/rate-limit";
 
 const MAX_SIZE_BYTES = 12 * 1024 * 1024; // 12MB
 const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "application/pdf"]);
@@ -19,6 +21,12 @@ const VALID_KINDS = new Set<ScannedDocumentKind>([
 ]);
 
 export async function POST(req: NextRequest) {
+  const ip = clientIp(req.headers);
+  const limit = await rateLimit("ocr", ip, RATE_LIMITS.fileUpload);
+  if (!limit.allowed) {
+    return NextResponse.json({ error: "Troppe richieste, riprova tra qualche minuto." }, { status: 429 });
+  }
+
   const formData = await req.formData();
   const file = formData.get("file");
   const kindRaw = formData.get("kind");
@@ -35,6 +43,9 @@ export async function POST(req: NextRequest) {
   }
 
   const buffer = Buffer.from(await file.arrayBuffer());
+  if (!isValidUpload(buffer, file.type, ALLOWED_TYPES)) {
+    return NextResponse.json({ error: "Il contenuto del file non corrisponde al formato dichiarato." }, { status: 415 });
+  }
   const relativeUrl = await saveFile({ buffer, originalName: file.name, folder: "documents" });
   const url = new URL(relativeUrl, req.nextUrl.origin).toString();
 
