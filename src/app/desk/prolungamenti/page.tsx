@@ -1,0 +1,28 @@
+import { prisma } from "@/lib/prisma";
+import { ExtensionRequestForm } from "@/components/desk/extension-request-form";
+import { ExtensionRequestList } from "@/components/desk/extension-request-list";
+
+export default async function ExtensionsPage() {
+  const requests = await prisma.extensionRequest.findMany({
+    where: { status: "pending" },
+    include: { booking: { include: { user: true, vehicle: true } } },
+    orderBy: { createdAt: "desc" },
+  });
+
+  const dto = requests.map((r) => ({
+    id: r.id,
+    bookingId: r.bookingId,
+    channel: r.channel,
+    requestedEndDate: r.requestedEndDate.toISOString(),
+    status: r.status,
+    booking: { user: { fullName: r.booking.user.fullName }, vehicle: r.booking.vehicle ? { name: r.booking.vehicle.name } : null },
+  }));
+
+  return (
+    <div className="space-y-6">
+      <h1 className="text-2xl font-bold">Smart Extension Engine</h1>
+      <ExtensionRequestForm />
+      <ExtensionRequestList requests={dto} />
+    </div>
+  );
+}
