@@ -1,3 +1,6 @@
+// Never statically prerendered/cached - every route here reads request-time state (session, DB, query params) or must run per-request.
+export const dynamic = "force-dynamic";
+
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { computeVehiclePrice } from "@/lib/pricing-engine";

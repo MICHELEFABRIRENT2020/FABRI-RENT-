@@ -6,6 +6,14 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
 import { ServiceWorkerRegister } from "@/components/providers/sw-register";
 
+// This is a fully dynamic, multi-tenant, DB-backed SaaS - no page has a
+// meaningful static version. Forcing dynamic rendering here (cascades to
+// every page) stops Next.js from prerendering pages at build time, which
+// would otherwise query the database (and fail the build) before any
+// runtime environment variables are available. All DB access happens at
+// request time in the deployed serverless function instead.
+export const dynamic = "force-dynamic";
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],

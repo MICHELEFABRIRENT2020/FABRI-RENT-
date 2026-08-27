@@ -1,3 +1,6 @@
+// Never statically prerendered/cached - every route here reads request-time state (session, DB, query params) or must run per-request.
+export const dynamic = "force-dynamic";
+
 import { NextRequest, NextResponse } from "next/server";
 import { createBookingSchema } from "@/lib/validation/booking";
 import { createBooking, BookingConflictError } from "@/lib/booking-service";
