@@ -1,9 +1,9 @@
 import Link from "next/link";
-import { requireRole } from "@/lib/session";
+import { requireRole, ADMIN_ROLES } from "@/lib/session";
 import { UserNav } from "@/components/site/user-nav";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  const user = await requireRole("super_admin");
+  const user = await requireRole(...ADMIN_ROLES);
 
   return (
     <div className="flex min-h-screen flex-col">

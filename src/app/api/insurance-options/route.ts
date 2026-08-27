@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { listInsuranceOptionsForZone } from "@/lib/insurance";
+import { getPublicTenant } from "@/lib/tenant";
 import type { InsuranceZone } from "@/generated/prisma/client";
 
 export async function GET(req: NextRequest) {
@@ -10,6 +11,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Parametro zone non valido" }, { status: 400 });
   }
 
-  const options = await listInsuranceOptionsForZone(zone);
+  const tenant = await getPublicTenant();
+  const options = await listInsuranceOptionsForZone(tenant.id, zone);
   return NextResponse.json({ options });
 }

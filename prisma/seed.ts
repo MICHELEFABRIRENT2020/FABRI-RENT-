@@ -5,17 +5,51 @@ import { PrismaClient } from "../src/generated/prisma/client";
 const prisma = new PrismaClient();
 
 async function main() {
+  const tenant = await prisma.tenant.upsert({
+    where: { id: "seed-tenant-fabrigroup" },
+    update: {},
+    create: {
+      id: "seed-tenant-fabrigroup",
+      name: "Fabri Rent Campania",
+      vatNumber: "IT00000000000",
+      pec: "fabrirent@pec.it",
+      address: "Via Privata Detta Sacra 33",
+      franchigiaRcaAmount: 1500,
+      franchigiaKaskoAmount: 0,
+      franchigiaFurtoAmount: 1000,
+      franchigiaIncendioAmount: 1000,
+      franchigiaDanniAmount: 500,
+      maintenanceIntervalKm: 10000,
+    },
+  });
+
+  const location = await prisma.location.upsert({
+    where: { id: "seed-location-hq" },
+    update: {},
+    create: {
+      id: "seed-location-hq",
+      tenantId: tenant.id,
+      name: "Sede Centrale",
+      address: "Via Privata Detta Sacra 33",
+      isPrimary: true,
+    },
+  });
+
   const adminPassword = await bcrypt.hash("FabriAdmin!2026", 10);
   const operatorPassword = await bcrypt.hash("FabriDesk!2026", 10);
+  const officinaPassword = await bcrypt.hash("FabriOfficina!2026", 10);
+  const contabilitaPassword = await bcrypt.hash("FabriConta!2026", 10);
 
   await prisma.user.upsert({
     where: { email: "admin@fabrirent.it" },
     update: {},
     create: {
-      fullName: "Amministratore Fabri GROUP",
+      tenantId: tenant.id,
+      locationId: location.id,
+      fullName: "Amministratore FabriGroup",
       email: "admin@fabrirent.it",
       phone: "+39 000 0000000",
-      role: "super_admin",
+      role: "admin",
       passwordHash: adminPassword,
     },
   });
@@ -24,6 +58,8 @@ async function main() {
     where: { email: "desk@fabrirent.it" },
     update: {},
     create: {
+      tenantId: tenant.id,
+      locationId: location.id,
       fullName: "Operatore Desk",
       email: "desk@fabrirent.it",
       phone: "+39 000 0000001",
@@ -32,53 +68,132 @@ async function main() {
     },
   });
 
+  await prisma.user.upsert({
+    where: { email: "officina@fabrirent.it" },
+    update: {},
+    create: {
+      tenantId: tenant.id,
+      locationId: location.id,
+      fullName: "Responsabile Officina",
+      email: "officina@fabrirent.it",
+      phone: "+39 000 0000002",
+      role: "officina",
+      passwordHash: officinaPassword,
+    },
+  });
+
+  await prisma.user.upsert({
+    where: { email: "contabilita@fabrirent.it" },
+    update: {},
+    create: {
+      tenantId: tenant.id,
+      locationId: location.id,
+      fullName: "Ufficio Contabilita'",
+      email: "contabilita@fabrirent.it",
+      phone: "+39 000 0000003",
+      role: "contabilita",
+      passwordHash: contabilitaPassword,
+    },
+  });
+
   // Fleet - grouped by category so "o simile" assignment has real alternatives.
-  const vehicles: { name: string; category: string; dailyRate: number; seats: number; transmission: string; fuelType: string; plate: string }[] = [
-    { name: "Fiat Panda 1.0 Hybrid", category: "City Car", dailyRate: 35, seats: 4, transmission: "Manuale", fuelType: "Hybrid", plate: "FR001AA" },
-    { name: "Toyota Aygo X", category: "City Car", dailyRate: 38, seats: 4, transmission: "Manuale", fuelType: "Benzina", plate: "FR002AA" },
-    { name: "Fiat Tipo", category: "Berlina Compatta", dailyRate: 48, seats: 5, transmission: "Manuale", fuelType: "Diesel", plate: "FR003BB" },
-    { name: "Volkswagen Golf", category: "Berlina Compatta", dailyRate: 55, seats: 5, transmission: "Automatico", fuelType: "Diesel", plate: "FR004BB" },
-    { name: "Jeep Renegade", category: "SUV Compatto", dailyRate: 62, seats: 5, transmission: "Automatico", fuelType: "Hybrid", plate: "FR005CC" },
-    { name: "Dacia Duster", category: "SUV Compatto", dailyRate: 58, seats: 5, transmission: "Manuale", fuelType: "Diesel", plate: "FR006CC" },
-    { name: "Fiat 500L", category: "Monovolume", dailyRate: 65, seats: 7, transmission: "Manuale", fuelType: "Diesel", plate: "FR007DD" },
-    { name: "Fiat Ducato", category: "Furgone", dailyRate: 85, seats: 3, transmission: "Manuale", fuelType: "Diesel", plate: "FR008EE" },
+  const vehicles: {
+    name: string;
+    brand: string;
+    model: string;
+    category: string;
+    dailyRate: number;
+    seats: number;
+    transmission: string;
+    fuelType: string;
+    plate: string;
+    chassisNumber: string;
+    year: number;
+    odometerKm: number;
+  }[] = [
+    { name: "Fiat Panda 1.0 Hybrid", brand: "Fiat", model: "Panda", category: "City Car", dailyRate: 35, seats: 4, transmission: "Manuale", fuelType: "Hybrid", plate: "FR001AA", chassisNumber: "ZFA31200000000001", year: 2023, odometerKm: 18000 },
+    { name: "Toyota Aygo X", brand: "Toyota", model: "Aygo X", category: "City Car", dailyRate: 38, seats: 4, transmission: "Manuale", fuelType: "Benzina", plate: "FR002AA", chassisNumber: "VNKKD0AX000000002", year: 2023, odometerKm: 12500 },
+    { name: "Fiat Tipo", brand: "Fiat", model: "Tipo", category: "Berlina Compatta", dailyRate: 48, seats: 5, transmission: "Manuale", fuelType: "Diesel", plate: "FR003BB", chassisNumber: "ZFA35600000000003", year: 2022, odometerKm: 41000 },
+    { name: "Volkswagen Golf", brand: "Volkswagen", model: "Golf", category: "Berlina Compatta", dailyRate: 55, seats: 5, transmission: "Automatico", fuelType: "Diesel", plate: "FR004BB", chassisNumber: "WVWZZZ1KZ0000004", year: 2022, odometerKm: 38500 },
+    { name: "Jeep Renegade", brand: "Jeep", model: "Renegade", category: "SUV Compatto", dailyRate: 62, seats: 5, transmission: "Automatico", fuelType: "Hybrid", plate: "FR005CC", chassisNumber: "ZACNJABB00000005", year: 2023, odometerKm: 9800 },
+    { name: "Dacia Duster", brand: "Dacia", model: "Duster", category: "SUV Compatto", dailyRate: 58, seats: 5, transmission: "Manuale", fuelType: "Diesel", plate: "FR006CC", chassisNumber: "UU1HSDCF00000006", year: 2021, odometerKm: 62000 },
+    { name: "Fiat 500L", brand: "Fiat", model: "500L", category: "Monovolume", dailyRate: 65, seats: 7, transmission: "Manuale", fuelType: "Diesel", plate: "FR007DD", chassisNumber: "ZFA35100000000007", year: 2021, odometerKm: 55000 },
+    { name: "Fiat Ducato", brand: "Fiat", model: "Ducato", category: "Furgone", dailyRate: 85, seats: 3, transmission: "Manuale", fuelType: "Diesel", plate: "FR008EE", chassisNumber: "ZFA25000000000008", year: 2020, odometerKm: 78000 },
   ];
 
-  for (const v of vehicles) {
-    await prisma.vehicle.upsert({
-      where: { plate: v.plate },
+  const oneYear = 365 * 24 * 60 * 60 * 1000;
+  const now = Date.now();
+
+  for (const [i, v] of vehicles.entries()) {
+    const vehicle = await prisma.vehicle.upsert({
+      where: { tenantId_plate: { tenantId: tenant.id, plate: v.plate } },
       update: {},
-      create: { ...v, status: "available" },
+      create: {
+        tenantId: tenant.id,
+        locationId: location.id,
+        ...v,
+        status: "available",
+        ownershipType: "aziendale",
+        purchaseVendor: "Concessionaria Demo",
+        purchaseDate: new Date(now - oneYear * 2),
+        purchasePrice: v.dailyRate * 300,
+        purchasePaymentMethod: "bonifico",
+        // staggered expiries to exercise the green/yellow/red compliance colors
+        bolloExpiryDate: new Date(now + oneYear * (i % 3 === 0 ? -0.02 : i % 3 === 1 ? 0.03 : 0.6)),
+        revisioneExpiryDate: new Date(now + oneYear * (i % 3 === 0 ? -0.01 : i % 3 === 1 ? 0.05 : 0.8)),
+      },
+    });
+
+    await prisma.vehicleInsurancePolicy.upsert({
+      where: { id: `seed-policy-${v.plate}` },
+      update: {},
+      create: {
+        id: `seed-policy-${v.plate}`,
+        tenantId: tenant.id,
+        vehicleId: vehicle.id,
+        company: "Generali Assicurazioni",
+        policyNumber: `POL-${v.plate}`,
+        rcaAmount: 0,
+        kaskoAmount: 500,
+        theftFireAmount: 1000,
+        damageAmount: 500,
+        periodStart: new Date(now - oneYear * 0.5),
+        periodEnd: new Date(now + oneYear * (i % 3 === 1 ? 0.02 : 0.5)),
+        premium: 900 + i * 20,
+        broker: "Broker Demo Assicurazioni",
+        roadsideAssistance: true,
+        gpsTracking: false,
+      },
     });
   }
 
   // Parking Go base rates (spec defaults).
   await prisma.parkingBaseRate.upsert({
-    where: { category: "moto" },
+    where: { tenantId_category: { tenantId: tenant.id, category: "moto" } },
     update: {},
-    create: { category: "moto", dailyRate: 5, copertoUplift: 0.4 },
+    create: { tenantId: tenant.id, category: "moto", dailyRate: 5, copertoUplift: 0.4 },
   });
   await prisma.parkingBaseRate.upsert({
-    where: { category: "auto" },
+    where: { tenantId_category: { tenantId: tenant.id, category: "auto" } },
     update: {},
-    create: { category: "auto", dailyRate: 10, copertoUplift: 0.4 },
+    create: { tenantId: tenant.id, category: "auto", dailyRate: 10, copertoUplift: 0.4 },
   });
   await prisma.parkingBaseRate.upsert({
-    where: { category: "furgone" },
+    where: { tenantId_category: { tenantId: tenant.id, category: "furgone" } },
     update: {},
-    create: { category: "furgone", dailyRate: 18, copertoUplift: 0.4 },
+    create: { tenantId: tenant.id, category: "furgone", dailyRate: 18, copertoUplift: 0.4 },
   });
 
   // Parking capacity caps.
   await prisma.parkingCapacity.upsert({
-    where: { slotType: "coperto" },
+    where: { tenantId_slotType: { tenantId: tenant.id, slotType: "coperto" } },
     update: {},
-    create: { slotType: "coperto", maxSlots: 20 },
+    create: { tenantId: tenant.id, slotType: "coperto", maxSlots: 20 },
   });
   await prisma.parkingCapacity.upsert({
-    where: { slotType: "scoperto" },
+    where: { tenantId_slotType: { tenantId: tenant.id, slotType: "scoperto" } },
     update: {},
-    create: { slotType: "scoperto", maxSlots: 40 },
+    create: { tenantId: tenant.id, slotType: "scoperto", maxSlots: 40 },
   });
 
   // Geo-localized insurance: Sud Italia never reaches 0 franchigia.
@@ -89,9 +204,9 @@ async function main() {
   ];
   for (const t of southTiers) {
     await prisma.insuranceOption.upsert({
-      where: { zone_tier: { zone: "sud_italia", tier: t.tier } },
+      where: { tenantId_zone_tier: { tenantId: tenant.id, zone: "sud_italia", tier: t.tier } },
       update: {},
-      create: { zone: "sud_italia", ...t, requiresCreditCard: false },
+      create: { tenantId: tenant.id, zone: "sud_italia", ...t, requiresCreditCard: false },
     });
   }
 
@@ -104,9 +219,9 @@ async function main() {
   ];
   for (const t of centroNordTiers) {
     await prisma.insuranceOption.upsert({
-      where: { zone_tier: { zone: "centro_nord_italia", tier: t.tier } },
+      where: { tenantId_zone_tier: { tenantId: tenant.id, zone: "centro_nord_italia", tier: t.tier } },
       update: {},
-      create: { zone: "centro_nord_italia", ...t },
+      create: { tenantId: tenant.id, zone: "centro_nord_italia", ...t },
     });
   }
 
@@ -118,7 +233,11 @@ async function main() {
     { code: "shuttle", label: "Navetta", price: 20, perDay: false },
   ];
   for (const e of extras) {
-    await prisma.extraService.upsert({ where: { code: e.code }, update: {}, create: e });
+    await prisma.extraService.upsert({
+      where: { tenantId_code: { tenantId: tenant.id, code: e.code } },
+      update: {},
+      create: { tenantId: tenant.id, ...e },
+    });
   }
 
   // Example seasonal pricing rule.
@@ -127,6 +246,7 @@ async function main() {
     update: {},
     create: {
       id: "seed-alta-stagione-agosto",
+      tenantId: tenant.id,
       name: "Alta stagione - Agosto",
       scope: "rent",
       type: "date_range",
@@ -137,7 +257,46 @@ async function main() {
     },
   });
 
+  // Officina catalog (section 11).
+  const workshopCatalog: { category: "meccanica" | "carrozzeria" | "gommista" | "elettrauto"; items: string[] }[] = [
+    {
+      category: "meccanica",
+      items: [
+        "Cambio olio", "Sostituzione filtri", "Freni - pastiglie", "Freni - dischi", "Ammortizzatori",
+        "Braccetti sospensione", "Sospensioni", "Batteria", "Cinghia distribuzione", "Frizione",
+        "Cambio", "Revisione motore", "Impianto raffreddamento", "Climatizzazione", "Impianto scarico",
+        "Elettronica di bordo", "Diagnosi computerizzata",
+      ],
+    },
+    {
+      category: "carrozzeria",
+      items: ["Graffio", "Ammaccatura", "Paraurti", "Cofano", "Portiera", "Parafango", "Vetri", "Fari", "Verniciatura"],
+    },
+    {
+      category: "gommista",
+      items: ["Sostituzione pneumatici", "Equilibratura", "Convergenza", "Riparazione foratura"],
+    },
+    {
+      category: "elettrauto",
+      items: ["Batteria", "Alternatore", "Centralina", "Sensori", "Luci", "Cablaggio"],
+    },
+  ];
+  for (const group of workshopCatalog) {
+    for (const label of group.items) {
+      await prisma.workshopCatalogItem.upsert({
+        where: { tenantId_category_label: { tenantId: tenant.id, category: group.category, label } },
+        update: {},
+        create: { tenantId: tenant.id, category: group.category, label },
+      });
+    }
+  }
+
   console.log("Seed completato.");
+  console.log("Login demo:");
+  console.log("  admin@fabrirent.it / FabriAdmin!2026");
+  console.log("  desk@fabrirent.it / FabriDesk!2026");
+  console.log("  officina@fabrirent.it / FabriOfficina!2026");
+  console.log("  contabilita@fabrirent.it / FabriConta!2026");
 }
 
 main()

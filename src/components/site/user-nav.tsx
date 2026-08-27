@@ -9,14 +9,21 @@ import type { AppUserRole } from "@/types/next-auth";
 const ROLE_LABEL: Record<AppUserRole, string> = {
   client: "Cliente",
   operator: "Operatore Desk",
-  super_admin: "Amministratore",
+  officina: "Officina",
+  contabilita: "Contabilita'",
+  visualizzatore: "Visualizzatore",
+  responsabile: "Responsabile",
+  admin: "Amministratore",
+  super_admin: "Super Admin",
 };
 
-const ROLE_HOME: Record<AppUserRole, string> = {
-  client: "/",
-  operator: "/desk",
-  super_admin: "/admin",
-};
+const ADMIN_HOME_ROLES = new Set<AppUserRole>(["super_admin", "admin", "responsabile"]);
+
+function homeFor(role: AppUserRole): string {
+  if (role === "client") return "/";
+  if (ADMIN_HOME_ROLES.has(role)) return "/admin";
+  return "/desk";
+}
 
 export function UserNav({ user }: { user: { name?: string | null; role: AppUserRole } }) {
   return (
@@ -24,7 +31,7 @@ export function UserNav({ user }: { user: { name?: string | null; role: AppUserR
       <Badge variant="secondary">{ROLE_LABEL[user.role]}</Badge>
       {user.role !== "client" && (
         <Button asChild variant="ghost" size="sm">
-          <Link href={ROLE_HOME[user.role]}>Pannello</Link>
+          <Link href={homeFor(user.role)}>Pannello</Link>
         </Button>
       )}
       <Button variant="outline" size="sm" onClick={() => signOut({ callbackUrl: "/" })}>

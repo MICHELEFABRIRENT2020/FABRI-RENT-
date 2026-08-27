@@ -3,11 +3,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PricingRuleForm } from "@/components/admin/pricing-rule-form";
 import { PricingRuleTable } from "@/components/admin/pricing-rule-table";
 import { ParkingBaseRateForm } from "@/components/admin/parking-base-rate-form";
+import { requireTenant } from "@/lib/session";
 
 export default async function AdminPricingPage() {
+  const { tenantId } = await requireTenant();
   const [rules, parkingRates] = await Promise.all([
-    prisma.pricingRule.findMany({ orderBy: [{ priority: "desc" }, { createdAt: "desc" }] }),
-    prisma.parkingBaseRate.findMany(),
+    prisma.pricingRule.findMany({ where: { tenantId }, orderBy: [{ priority: "desc" }, { createdAt: "desc" }] }),
+    prisma.parkingBaseRate.findMany({ where: { tenantId } }),
   ]);
 
   const rulesDto = rules.map((r) => ({

@@ -9,6 +9,7 @@ const ACTIVE_BOOKING_STATUSES = ["confirmed", "checked_in"] as const;
  * booking, e.g. during an extension request).
  */
 export async function findAvailableVehiclesInCategory(params: {
+  tenantId: string;
   category: string;
   startDate: Date;
   endDate: Date;
@@ -17,6 +18,7 @@ export async function findAvailableVehiclesInCategory(params: {
 }) {
   const candidates = await prisma.vehicle.findMany({
     where: {
+      tenantId: params.tenantId,
       category: params.category,
       status: "available",
       id: params.excludeVehicleId ? { not: params.excludeVehicleId } : undefined,
@@ -37,6 +39,7 @@ export async function findAvailableVehiclesInCategory(params: {
 }
 
 export async function assignVehicleForBooking(params: {
+  tenantId: string;
   category: string;
   startDate: Date;
   endDate: Date;
@@ -54,11 +57,12 @@ export async function assignVehicleForBooking(params: {
  * same category so the first customer's extension can still be approved.
  */
 export async function resolveExtensionRequest(params: {
+  tenantId: string;
   bookingId: string;
   requestedEndDate: Date;
 }) {
-  const booking = await prisma.booking.findUniqueOrThrow({
-    where: { id: params.bookingId },
+  const booking = await prisma.booking.findFirstOrThrow({
+    where: { id: params.bookingId, tenantId: params.tenantId },
     include: { vehicle: true },
   });
 
@@ -68,6 +72,7 @@ export async function resolveExtensionRequest(params: {
 
   const conflictingBooking = await prisma.booking.findFirst({
     where: {
+      tenantId: params.tenantId,
       vehicleId: booking.vehicleId,
       id: { not: booking.id },
       status: { in: [...ACTIVE_BOOKING_STATUSES] },
@@ -82,6 +87,7 @@ export async function resolveExtensionRequest(params: {
   }
 
   const alternative = await assignVehicleForBooking({
+    tenantId: params.tenantId,
     category: booking.vehicle.category,
     startDate: conflictingBooking.startDate,
     endDate: conflictingBooking.endDate,

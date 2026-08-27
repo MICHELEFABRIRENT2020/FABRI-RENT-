@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { requireTenant } from "@/lib/session";
 
 function dayRange(date = new Date()) {
   const start = new Date(date);
@@ -10,22 +11,23 @@ function dayRange(date = new Date()) {
 }
 
 export default async function AdminDashboardPage() {
+  const { tenantId } = await requireTenant();
   const { start, end } = dayRange();
 
   const [totalBookings, revenueAgg, arrivalsToday, departuresToday, capacities, occupiedCoperto, occupiedScoperto, vehiclesInMaintenance] =
     await Promise.all([
-      prisma.booking.count({ where: { status: { not: "canceled" } } }),
-      prisma.booking.aggregate({ _sum: { totalPrice: true }, where: { paymentStatus: "paid" } }),
-      prisma.booking.count({ where: { startDate: { gte: start, lt: end }, status: { not: "canceled" } } }),
-      prisma.booking.count({ where: { endDate: { gte: start, lt: end }, status: { not: "canceled" } } }),
-      prisma.parkingCapacity.findMany(),
+      prisma.booking.count({ where: { tenantId, status: { not: "canceled" } } }),
+      prisma.booking.aggregate({ _sum: { totalPrice: true }, where: { tenantId, paymentStatus: "paid" } }),
+      prisma.booking.count({ where: { tenantId, startDate: { gte: start, lt: end }, status: { not: "canceled" } } }),
+      prisma.booking.count({ where: { tenantId, endDate: { gte: start, lt: end }, status: { not: "canceled" } } }),
+      prisma.parkingCapacity.findMany({ where: { tenantId } }),
       prisma.booking.count({
-        where: { serviceType: "parking", parkingType: "coperto", status: { in: ["confirmed", "checked_in"] } },
+        where: { tenantId, serviceType: "parking", parkingType: "coperto", status: { in: ["confirmed", "checked_in"] } },
       }),
       prisma.booking.count({
-        where: { serviceType: "parking", parkingType: "scoperto", status: { in: ["confirmed", "checked_in"] } },
+        where: { tenantId, serviceType: "parking", parkingType: "scoperto", status: { in: ["confirmed", "checked_in"] } },
       }),
-      prisma.vehicle.count({ where: { status: "maintenance" } }),
+      prisma.vehicle.count({ where: { tenantId, status: "maintenance" } }),
     ]);
 
   const copertoCap = capacities.find((c) => c.slotType === "coperto")?.maxSlots ?? 0;

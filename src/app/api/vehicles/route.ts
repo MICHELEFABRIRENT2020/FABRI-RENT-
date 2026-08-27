@@ -1,14 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { computeVehiclePrice } from "@/lib/pricing-engine";
+import { getPublicTenant } from "@/lib/tenant";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const startParam = searchParams.get("start");
   const endParam = searchParams.get("end");
+  const tenant = await getPublicTenant();
 
   const vehicles = await prisma.vehicle.findMany({
-    where: { status: "available" },
+    where: { tenantId: tenant.id, status: "available" },
     orderBy: [{ category: "asc" }, { dailyRate: "asc" }],
   });
 
@@ -32,6 +34,7 @@ export async function GET(req: NextRequest) {
 
       if (startDate && endDate) {
         const priced = await computeVehiclePrice({
+          tenantId: tenant.id,
           vehicleId: representative.id,
           startDate,
           endDate,

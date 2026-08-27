@@ -9,13 +9,14 @@ import type { ParkingCategory, ParkingSlotType, PricingScope } from "@/generated
  * several rules tie, the most recently created one wins.
  */
 export async function resolvePricingMultiplier(params: {
+  tenantId: string;
   scope: PricingScope;
   category?: string | null;
   startDate: Date;
   endDate: Date;
 }): Promise<{ multiplier: number; fixedRate: number | null; ruleName: string | null }> {
   const rules = await prisma.pricingRule.findMany({
-    where: { scope: params.scope, active: true },
+    where: { tenantId: params.tenantId, scope: params.scope, active: true },
     orderBy: [{ priority: "desc" }, { createdAt: "desc" }],
   });
 
@@ -50,14 +51,18 @@ export async function resolvePricingMultiplier(params: {
 }
 
 export async function computeVehiclePrice(params: {
+  tenantId: string;
   vehicleId: string;
   startDate: Date;
   endDate: Date;
 }): Promise<{ days: number; dailyRate: number; total: number; ruleName: string | null }> {
-  const vehicle = await prisma.vehicle.findUniqueOrThrow({ where: { id: params.vehicleId } });
+  const vehicle = await prisma.vehicle.findFirstOrThrow({
+    where: { id: params.vehicleId, tenantId: params.tenantId },
+  });
   const days = computeBillableDays(params.startDate, params.endDate);
 
   const { multiplier, fixedRate, ruleName } = await resolvePricingMultiplier({
+    tenantId: params.tenantId,
     scope: "rent",
     category: vehicle.category,
     startDate: params.startDate,
@@ -69,17 +74,19 @@ export async function computeVehiclePrice(params: {
 }
 
 export async function computeParkingPrice(params: {
+  tenantId: string;
   category: ParkingCategory;
   slotType: ParkingSlotType;
   startDate: Date;
   endDate: Date;
 }): Promise<{ days: number; dailyRate: number; total: number; ruleName: string | null }> {
   const baseRate = await prisma.parkingBaseRate.findUniqueOrThrow({
-    where: { category: params.category },
+    where: { tenantId_category: { tenantId: params.tenantId, category: params.category } },
   });
   const days = computeBillableDays(params.startDate, params.endDate);
 
   const { multiplier, fixedRate, ruleName } = await resolvePricingMultiplier({
+    tenantId: params.tenantId,
     scope: "parking",
     category: params.category,
     startDate: params.startDate,
@@ -94,19 +101,22 @@ export async function computeParkingPrice(params: {
   return { days, dailyRate: Number(dailyRate.toFixed(2)), total: Number((dailyRate * days).toFixed(2)), ruleName };
 }
 
-export async function computeInsurancePrice(insuranceOptionId: string, days: number) {
-  const option = await prisma.insuranceOption.findUniqueOrThrow({ where: { id: insuranceOptionId } });
+export async function computeInsurancePrice(tenantId: string, insuranceOptionId: string, days: number) {
+  const option = await prisma.insuranceOption.findFirstOrThrow({
+    where: { id: insuranceOptionId, tenantId },
+  });
   return Number((Number(option.dailyCost) * days).toFixed(2));
 }
 
 export async function computeExtrasPrice(
+  tenantId: string,
   items: { extraServiceId: string; quantity: number }[],
   days: number
 ): Promise<{ total: number; lines: { extraServiceId: string; unitPrice: number; quantity: number }[] }> {
   if (items.length === 0) return { total: 0, lines: [] };
 
   const services = await prisma.extraService.findMany({
-    where: { id: { in: items.map((i) => i.extraServiceId) } },
+    where: { tenantId, id: { in: items.map((i) => i.extraServiceId) } },
   });
 
   let total = 0;

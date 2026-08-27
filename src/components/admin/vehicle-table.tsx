@@ -27,8 +27,10 @@ export type VehicleDto = {
 const STATUS_LABEL: Record<VehicleStatus, string> = {
   available: "Disponibile",
   rented: "Noleggiata",
-  maintenance: "In manutenzione",
-  retired: "Ritirata",
+  maintenance: "Manutenzione",
+  guasto: "Guasto",
+  fuori_flotta: "Fuori flotta",
+  non_disponibile: "Non disponibile",
 };
 
 export function VehicleTable({ vehicles }: { vehicles: VehicleDto[] }) {

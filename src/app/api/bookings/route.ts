@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createBookingSchema } from "@/lib/validation/booking";
 import { createBooking, BookingConflictError } from "@/lib/booking-service";
+import { getPublicTenant } from "@/lib/tenant";
 
 export async function POST(req: NextRequest) {
   const json = await req.json();
@@ -11,7 +12,8 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const { booking, clientSecret } = await createBooking(parsed.data);
+    const tenant = await getPublicTenant();
+    const { booking, clientSecret } = await createBooking(tenant.id, parsed.data);
     return NextResponse.json(
       {
         bookingId: booking.id,

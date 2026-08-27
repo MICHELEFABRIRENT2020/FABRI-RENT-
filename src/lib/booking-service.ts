@@ -18,7 +18,7 @@ const HQ_LOCATION = "Via Privata Detta Sacra 33";
 
 export class BookingConflictError extends Error {}
 
-async function upsertCustomer(customer: CreateBookingInput["customer"]) {
+async function upsertCustomer(tenantId: string, customer: CreateBookingInput["customer"]) {
   return prisma.user.upsert({
     where: { email: customer.email },
     update: {
@@ -36,6 +36,7 @@ async function upsertCustomer(customer: CreateBookingInput["customer"]) {
       pec: customer.pec || null,
     },
     create: {
+      tenantId,
       fullName: customer.fullName,
       email: customer.email,
       phone: customer.phone,
@@ -54,7 +55,7 @@ async function upsertCustomer(customer: CreateBookingInput["customer"]) {
   });
 }
 
-function documentAuditRows(userId: string, bookingId: string, customer: CreateBookingInput["customer"]) {
+function documentAuditRows(tenantId: string, userId: string, bookingId: string, customer: CreateBookingInput["customer"]) {
   const slots: { type: DocumentType; url?: string }[] = [
     { type: "id_card_front", url: customer.idCardFrontUrl },
     { type: "id_card_back", url: customer.idCardBackUrl },
@@ -64,7 +65,16 @@ function documentAuditRows(userId: string, bookingId: string, customer: CreateBo
 
   return slots
     .filter((s) => s.url)
-    .map((s) => ({ userId, bookingId, documentType: s.type, fileUrl: s.url as string }));
+    .map((s) => ({ tenantId, userId, bookingId, documentType: s.type, fileUrl: s.url as string }));
+}
+
+/** Atomically reserves the next sequential contract number for the tenant (rent contracts only). */
+async function nextContractNumber(tenantId: string): Promise<number> {
+  const tenant = await prisma.tenant.update({
+    where: { id: tenantId },
+    data: { nextContractNumber: { increment: 1 } },
+  });
+  return tenant.nextContractNumber - 1;
 }
 
 /**
@@ -74,16 +84,17 @@ function documentAuditRows(userId: string, bookingId: string, customer: CreateBo
  * upsert happens first. The booking + extras + document audits + payment
  * row(s) are then written atomically in a single transaction.
  */
-export async function createBooking(input: CreateBookingInput) {
+export async function createBooking(tenantId: string, input: CreateBookingInput) {
   const startDate = new Date(input.startDate);
   const endDate = new Date(input.endDate);
   const days = computeBillableDays(startDate, endDate);
-  const customerUser = await upsertCustomer(input.customer);
-  const extrasResult = await computeExtrasPrice(input.extras, days);
+  const customerUser = await upsertCustomer(tenantId, input.customer);
+  const extrasResult = await computeExtrasPrice(tenantId, input.extras, days);
   const bookingId = crypto.randomUUID();
 
   if (input.serviceType === "rent") {
     const vehicle = await assignVehicleForBooking({
+      tenantId,
       category: input.vehicleCategory,
       startDate,
       endDate,
@@ -94,19 +105,22 @@ export async function createBooking(input: CreateBookingInput) {
       );
     }
 
-    const insuranceOption = await prisma.insuranceOption.findUniqueOrThrow({
-      where: { id: input.insuranceOptionId },
+    const insuranceOption = await prisma.insuranceOption.findFirstOrThrow({
+      where: { id: input.insuranceOptionId, tenantId },
     });
     assertInsuranceSelectable(insuranceOption, input.paymentMethod);
 
-    const { total: basePrice } = await computeVehiclePrice({ vehicleId: vehicle.id, startDate, endDate });
-    const insurancePrice = await computeInsurancePrice(insuranceOption.id, days);
+    const { total: basePrice } = await computeVehiclePrice({ tenantId, vehicleId: vehicle.id, startDate, endDate });
+    const insurancePrice = await computeInsurancePrice(tenantId, insuranceOption.id, days);
     const totalPrice = Number((basePrice + insurancePrice + extrasResult.total).toFixed(2));
     const kasko = isKasko(insuranceOption.tier);
     const depositAmount = kasko ? 0 : Number(insuranceOption.residualDeductible);
+    const contractNumber = await nextContractNumber(tenantId);
 
     const bookingData: Prisma.BookingCreateInput = {
       id: bookingId,
+      tenant: { connect: { id: tenantId } },
+      contractNumber,
       user: { connect: { id: customerUser.id } },
       serviceType: "rent",
       vehicle: { connect: { id: vehicle.id } },
@@ -120,6 +134,7 @@ export async function createBooking(input: CreateBookingInput) {
       totalPrice,
       depositAmount,
       hasDeposit: !kasko,
+      paymentMethod: input.paymentMethod === "credit_card" || input.paymentMethod === "debit_card" ? "stripe" : undefined,
       extras: {
         create: extrasResult.lines.map((l) => ({
           extraServiceId: l.extraServiceId,
@@ -140,7 +155,7 @@ export async function createBooking(input: CreateBookingInput) {
       });
       clientSecret = intent.client_secret;
       paymentRows = [
-        { bookingId, type: "kasko_charge", amount: totalPrice, captureMethod: "automatic", stripePaymentIntentId: intent.id },
+        { tenantId, bookingId, type: "kasko_charge", method: "stripe", amount: totalPrice, captureMethod: "automatic", stripePaymentIntentId: intent.id },
       ];
     } else {
       // Single PaymentIntent authorizes rental + deposit together (manual
@@ -154,14 +169,14 @@ export async function createBooking(input: CreateBookingInput) {
       });
       clientSecret = combinedIntent.client_secret;
       paymentRows = [
-        { bookingId, type: "rental_charge", amount: totalPrice, captureMethod: "manual", stripePaymentIntentId: combinedIntent.id },
-        { bookingId, type: "deposit_authorization", amount: depositAmount, captureMethod: "manual", stripePaymentIntentId: combinedIntent.id },
+        { tenantId, bookingId, type: "rental_charge", method: "stripe", amount: totalPrice, captureMethod: "manual", stripePaymentIntentId: combinedIntent.id },
+        { tenantId, bookingId, type: "deposit_authorization", method: "stripe", amount: depositAmount, captureMethod: "manual", stripePaymentIntentId: combinedIntent.id },
       ];
     }
 
     const [booking] = await prisma.$transaction([
       prisma.booking.create({ data: bookingData }),
-      prisma.documentAudit.createMany({ data: documentAuditRows(customerUser.id, bookingId, input.customer) }),
+      prisma.documentAudit.createMany({ data: documentAuditRows(tenantId, customerUser.id, bookingId, input.customer) }),
       prisma.payment.createMany({ data: paymentRows }),
     ]);
 
@@ -170,6 +185,7 @@ export async function createBooking(input: CreateBookingInput) {
 
   // Parking (Parking Go)
   const availability = await checkParkingAvailability({
+    tenantId,
     slotType: input.parkingType,
     startDate,
     endDate,
@@ -181,6 +197,7 @@ export async function createBooking(input: CreateBookingInput) {
   }
 
   const { total: basePrice } = await computeParkingPrice({
+    tenantId,
     category: input.parkingCategory,
     slotType: input.parkingType,
     startDate,
@@ -196,6 +213,7 @@ export async function createBooking(input: CreateBookingInput) {
 
   const bookingData: Prisma.BookingCreateInput = {
     id: bookingId,
+    tenant: { connect: { id: tenantId } },
     user: { connect: { id: customerUser.id } },
     serviceType: "parking",
     parkingType: input.parkingType,
@@ -209,6 +227,7 @@ export async function createBooking(input: CreateBookingInput) {
     totalPrice,
     depositAmount: 0,
     hasDeposit: false,
+    paymentMethod: "stripe",
     extras: {
       create: extrasResult.lines.map((l) => ({
         extraServiceId: l.extraServiceId,
@@ -220,9 +239,9 @@ export async function createBooking(input: CreateBookingInput) {
 
   const [booking] = await prisma.$transaction([
     prisma.booking.create({ data: bookingData }),
-    prisma.documentAudit.createMany({ data: documentAuditRows(customerUser.id, bookingId, input.customer) }),
+    prisma.documentAudit.createMany({ data: documentAuditRows(tenantId, customerUser.id, bookingId, input.customer) }),
     prisma.payment.create({
-      data: { bookingId, type: "rental_charge", amount: totalPrice, captureMethod: "automatic", stripePaymentIntentId: intent.id },
+      data: { tenantId, bookingId, type: "rental_charge", method: "stripe", amount: totalPrice, captureMethod: "automatic", stripePaymentIntentId: intent.id },
     }),
   ]);
 

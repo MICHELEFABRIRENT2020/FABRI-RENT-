@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
+import { STAFF_ROLES, ADMIN_ROLES } from "@/lib/session";
 
 export default auth((req) => {
   const { pathname } = req.nextUrl;
@@ -16,11 +17,11 @@ export default auth((req) => {
     return NextResponse.redirect(loginUrl);
   }
 
-  if (isAdmin && role !== "super_admin") {
+  if (isAdmin && !(role && ADMIN_ROLES.includes(role))) {
     return NextResponse.redirect(new URL("/", req.nextUrl.origin));
   }
 
-  if (isDesk && role !== "operator" && role !== "super_admin") {
+  if (isDesk && !(role && STAFF_ROLES.includes(role))) {
     return NextResponse.redirect(new URL("/", req.nextUrl.origin));
   }
 

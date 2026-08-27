@@ -1,5 +1,6 @@
-// Fabri GROUP - All-in-One Mobility Platform
-// Prisma schema: customer booking engine, desk operator workflow, super admin governance.
+// FabriGroup Rent Manager - Multi-tenant Automotive SaaS
+// Prisma schema: tenants/RBAC, fleet & compliance, contracts, workshop,
+// damages/claims, blacklist, fines, documents, cash register, notifications.
 
 generator client {
   provider = "prisma-client"
@@ -16,9 +17,14 @@ datasource db {
 // ---------------------------------------------------------------------------
 
 enum UserRole {
+  super_admin // FabriGroup platform owner - all tenants
+  admin // tenant owner/administrator
+  responsabile // location/fleet manager
+  operator // desk operator
+  officina // workshop staff
+  contabilita // accounting/invoicing
+  visualizzatore // read-only
   client
-  operator
-  super_admin
 
   @@map("user_role")
 }
@@ -49,9 +55,31 @@ enum VehicleStatus {
   available
   rented
   maintenance
-  retired
+  guasto
+  fuori_flotta
+  non_disponibile
 
   @@map("vehicle_status")
+}
+
+enum VehicleOwnershipType {
+  aziendale
+  leasing
+  sub_noleggio
+  comodato_uso
+  altro
+
+  @@map("vehicle_ownership_type")
+}
+
+enum VehicleExitReason {
+  venduta
+  rottamata
+  esportata
+  incidente
+  altro
+
+  @@map("vehicle_exit_reason")
 }
 
 enum PricingScope {
@@ -110,6 +138,15 @@ enum CheckInMethod {
   @@map("check_in_method")
 }
 
+enum ContractSignatureStatus {
+  none
+  link_sent
+  otp_pending
+  signed
+
+  @@map("contract_signature_status")
+}
+
 enum ExtensionChannel {
   whatsapp
   web
@@ -143,6 +180,17 @@ enum PaymentType {
   @@map("payment_type")
 }
 
+enum PaymentMethod {
+  contanti
+  pos
+  stripe
+  sumup
+  bonifico
+  altro
+
+  @@map("payment_method")
+}
+
 enum PaymentStatus {
   pending
   authorized
@@ -154,12 +202,214 @@ enum PaymentStatus {
   @@map("payment_status")
 }
 
+enum InvoiceStatus {
+  draft
+  queued
+  sent
+  accepted
+  rejected
+  error
+
+  @@map("invoice_status")
+}
+
+enum WorkshopCategory {
+  meccanica
+  carrozzeria
+  gommista
+  elettrauto
+
+  @@map("workshop_category")
+}
+
+enum DamageRecordType {
+  graffio
+  ammaccatura
+  paraurti
+  vetro
+  pneumatico
+  interni
+  carrozzeria
+  meccanica
+  altro
+
+  @@map("damage_record_type")
+}
+
+enum DamageRecordStatus {
+  aperto
+  in_valutazione
+  addebitato
+  chiuso
+
+  @@map("damage_record_status")
+}
+
+enum ClaimStatus {
+  aperto
+  in_istruttoria
+  liquidazione
+  chiuso
+  respinto
+
+  @@map("claim_status")
+}
+
+enum BlacklistReason {
+  danno
+  mancato_pagamento
+  frode
+  comportamento_scorretto
+  incidente
+  documento_falso
+  altro
+
+  @@map("blacklist_reason")
+}
+
+enum BlacklistStatus {
+  attiva
+  in_verifica
+  archiviata
+
+  @@map("blacklist_status")
+}
+
+enum FineStatus {
+  da_notificare
+  notificata
+  in_ricorso
+  pagata
+  archiviata
+
+  @@map("fine_status")
+}
+
+enum ExpenseCategory {
+  carburante
+  operaio
+  ricambi
+  buoni_pasto
+  fornitori
+  altro
+
+  @@map("expense_category")
+}
+
+enum NotificationType {
+  contratto_non_firmato
+  rientro_imminente
+  pagamento_scaduto
+  assicurazione_scadenza
+  revisione_scadenza
+  bollo_scadenza
+  manutenzione_scadenza
+  danno
+  multa
+  fattura_non_inviata
+  pec_non_inviata
+
+  @@map("notification_type")
+}
+
+enum NotificationSeverity {
+  info
+  warning
+  critical
+
+  @@map("notification_severity")
+}
+
+// ---------------------------------------------------------------------------
+// Tenants & Locations (multi-tenant / multi-sede SaaS)
+// ---------------------------------------------------------------------------
+
+model Tenant {
+  id        String   @id @default(uuid())
+  name      String
+  vatNumber String?  @map("vat_number")
+  pec       String?
+  sdiCode   String?  @map("sdi_code")
+  address   String?
+  logoUrl   String?  @map("logo_url")
+
+  nextContractNumber Int @default(1) @map("next_contract_number")
+
+  // Default franchigie (company-editable) used to prefill the legal
+  // rental contract template - never hardcoded in the PDF generator.
+  franchigiaRcaAmount      Decimal @default(0) @db.Decimal(10, 2) @map("franchigia_rca_amount")
+  franchigiaRcaPercent     Decimal @default(0) @db.Decimal(5, 2) @map("franchigia_rca_percent")
+  franchigiaKaskoAmount    Decimal @default(0) @db.Decimal(10, 2) @map("franchigia_kasko_amount")
+  franchigiaKaskoPercent   Decimal @default(0) @db.Decimal(5, 2) @map("franchigia_kasko_percent")
+  franchigiaFurtoAmount    Decimal @default(0) @db.Decimal(10, 2) @map("franchigia_furto_amount")
+  franchigiaFurtoPercent   Decimal @default(0) @db.Decimal(5, 2) @map("franchigia_furto_percent")
+  franchigiaIncendioAmount Decimal @default(0) @db.Decimal(10, 2) @map("franchigia_incendio_amount")
+  franchigiaIncendioPercent Decimal @default(0) @db.Decimal(5, 2) @map("franchigia_incendio_percent")
+  franchigiaDanniAmount    Decimal @default(0) @db.Decimal(10, 2) @map("franchigia_danni_amount")
+  franchigiaDanniPercent   Decimal @default(0) @db.Decimal(5, 2) @map("franchigia_danni_percent")
+
+  maintenanceIntervalKm Int @default(10000) @map("maintenance_interval_km")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  locations             Location[]
+  users                 User[]
+  vehicles              Vehicle[]
+  vehicleInsurancePolicies VehicleInsurancePolicy[]
+  pricingRules          PricingRule[]
+  parkingBaseRates      ParkingBaseRate[]
+  parkingCapacities     ParkingCapacity[]
+  insuranceOptions      InsuranceOption[]
+  extraServices         ExtraService[]
+  bookings              Booking[]
+  documentAudits        DocumentAudit[]
+  damageReports         DamageReport[]
+  damageTickets         DamageTicket[]
+  extensionRequests     ExtensionRequest[]
+  payments              Payment[]
+  invoices              Invoice[]
+  auditLogs             AuditLog[]
+  workshopCatalogItems  WorkshopCatalogItem[]
+  workshopInterventions WorkshopIntervention[]
+  damageRecords         DamageRecord[]
+  claims                Claim[]
+  blacklistEntries      BlacklistEntry[]
+  fines                 Fine[]
+  issuingAuthorities    IssuingAuthority[]
+  documents             Document[]
+  expenses              Expense[]
+  notifications         Notification[]
+
+  @@map("tenants")
+}
+
+model Location {
+  id        String  @id @default(uuid())
+  tenantId  String  @map("tenant_id")
+  name      String
+  address   String?
+  isPrimary Boolean @default(false) @map("is_primary")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  users    User[]
+  vehicles Vehicle[]
+  bookings Booking[]
+
+  @@index([tenantId])
+  @@map("locations")
+}
+
 // ---------------------------------------------------------------------------
 // Users & Auth
 // ---------------------------------------------------------------------------
 
 model User {
   id                  String   @id @default(uuid())
+  tenantId            String?  @map("tenant_id") // null only for platform super_admin
+  locationId          String?  @map("location_id")
   fullName            String   @map("full_name")
   email               String   @unique
   passwordHash        String?  @map("password_hash")
@@ -183,13 +433,24 @@ model User {
   createdAt           DateTime @default(now()) @map("created_at")
   updatedAt           DateTime @updatedAt @map("updated_at")
 
+  tenant              Tenant?  @relation(fields: [tenantId], references: [id])
+  location            Location? @relation(fields: [locationId], references: [id])
+
   bookings            Booking[]               @relation("BookingCustomer")
   operatedBookings    Booking[]               @relation("BookingOperator")
   documentAudits      DocumentAudit[]
   reviewedAudits      DocumentAudit[]         @relation("DocumentAuditReviewer")
   auditLogs           AuditLog[]
   priceOverrides      Booking[]               @relation("BookingPriceOverrideBy")
+  workshopInterventions WorkshopIntervention[]
+  damageRecords       DamageRecord[]
+  claims              Claim[]
+  blacklistEntries    BlacklistEntry[]
+  fines               Fine[]
+  documents           Document[]
+  expenses            Expense[]
 
+  @@index([tenantId])
   @@map("users")
 }
 
@@ -199,7 +460,12 @@ model User {
 
 model Vehicle {
   id             String        @id @default(uuid())
+  tenantId       String        @map("tenant_id")
+  locationId     String?       @map("location_id")
+
   name           String // es. "Fiat Panda 1.0 Hybrid"
+  brand          String? // Marca
+  model          String? // Modello
   category       String // es. "City Car" - matching group used for "o simile" assignment
   isOrSimilar    Boolean       @default(true) @map("is_or_similar")
   dailyRate      Decimal       @db.Decimal(10, 2) @map("daily_rate")
@@ -208,15 +474,83 @@ model Vehicle {
   transmission   String?
   fuelType       String?       @map("fuel_type")
   imageUrl       String?       @map("image_url")
-  plate          String?       @unique
+  plate          String?
+  chassisNumber  String?       @map("chassis_number") // telaio
+  year           Int?
+  odometerKm     Int?          @map("odometer_km")
   maintenanceNote String?      @map("maintenance_note")
+
+  bolloExpiryDate     DateTime? @map("bollo_expiry_date")
+  revisioneExpiryDate DateTime? @map("revisione_expiry_date")
+  lastMaintenanceKm   Int?      @map("last_maintenance_km")
+
+  ownershipType       VehicleOwnershipType @default(aziendale) @map("ownership_type")
+  purchaseVendor      String?              @map("purchase_vendor")
+  purchaseDate        DateTime?            @map("purchase_date")
+  purchasePrice       Decimal?             @db.Decimal(10, 2) @map("purchase_price")
+  purchasePaymentMethod String?            @map("purchase_payment_method")
+  purchaseInvoiceUrl  String?              @map("purchase_invoice_url")
+
+  exitDate            DateTime?            @map("exit_date")
+  exitReason          VehicleExitReason?   @map("exit_reason")
+
+  gpsDeviceId         String?              @map("gps_device_id")
 
   createdAt      DateTime      @default(now()) @map("created_at")
   updatedAt      DateTime      @updatedAt @map("updated_at")
 
-  bookings       Booking[]
+  tenant         Tenant        @relation(fields: [tenantId], references: [id])
+  location       Location?     @relation(fields: [locationId], references: [id])
 
+  bookings       Booking[]
+  insurancePolicies VehicleInsurancePolicy[]
+  workshopInterventions WorkshopIntervention[]
+  damageRecords  DamageRecord[]
+  claims         Claim[]
+  fines          Fine[]
+
+  @@unique([tenantId, plate])
+  @@index([tenantId])
   @@map("vehicles")
+}
+
+// ---------------------------------------------------------------------------
+// Vehicle insurance policies (section 9)
+// ---------------------------------------------------------------------------
+
+model VehicleInsurancePolicy {
+  id                String   @id @default(uuid())
+  tenantId          String   @map("tenant_id")
+  vehicleId         String   @map("vehicle_id")
+
+  company           String
+  policyNumber      String   @map("policy_number")
+
+  rcaAmount         Decimal? @db.Decimal(10, 2) @map("rca_amount")
+  rcaPercent        Decimal? @db.Decimal(5, 2) @map("rca_percent")
+  kaskoAmount       Decimal? @db.Decimal(10, 2) @map("kasko_amount")
+  kaskoPercent      Decimal? @db.Decimal(5, 2) @map("kasko_percent")
+  theftFireAmount   Decimal? @db.Decimal(10, 2) @map("theft_fire_amount")
+  theftFirePercent  Decimal? @db.Decimal(5, 2) @map("theft_fire_percent")
+  damageAmount      Decimal? @db.Decimal(10, 2) @map("damage_amount")
+  damagePercent     Decimal? @db.Decimal(5, 2) @map("damage_percent")
+
+  periodStart       DateTime @map("period_start")
+  periodEnd         DateTime @map("period_end")
+  premium           Decimal? @db.Decimal(10, 2)
+  broker            String?
+  roadsideAssistance Boolean @default(false) @map("roadside_assistance")
+  gpsTracking       Boolean  @default(false) @map("gps_tracking")
+
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  tenant            Tenant   @relation(fields: [tenantId], references: [id])
+  vehicle           Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([vehicleId])
+  @@map("vehicle_insurance_policies")
 }
 
 // ---------------------------------------------------------------------------
@@ -225,6 +559,7 @@ model Vehicle {
 
 model PricingRule {
   id            String          @id @default(uuid())
+  tenantId      String          @map("tenant_id")
   name          String // es. "Alta stagione agosto", "Ponte 25 aprile"
   scope         PricingScope
   type          PricingRuleType
@@ -239,33 +574,45 @@ model PricingRule {
   createdAt     DateTime        @default(now()) @map("created_at")
   updatedAt     DateTime        @updatedAt @map("updated_at")
 
+  tenant        Tenant          @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId])
   @@map("pricing_rules")
 }
 
 model ParkingBaseRate {
   id           String          @id @default(uuid())
-  category     ParkingCategory @unique
+  tenantId     String          @map("tenant_id")
+  category     ParkingCategory
   dailyRate    Decimal         @db.Decimal(10, 2) @map("daily_rate") // scoperto base rate
   copertoUplift Decimal        @default(0.40) @db.Decimal(5, 2) @map("coperto_uplift") // +40%
 
+  tenant       Tenant          @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, category])
   @@map("parking_base_rates")
 }
 
 model ParkingCapacity {
   id        String          @id @default(uuid())
-  slotType  ParkingSlotType @unique
+  tenantId  String          @map("tenant_id")
+  slotType  ParkingSlotType
   maxSlots  Int             @map("max_slots")
   updatedAt DateTime        @updatedAt @map("updated_at")
 
+  tenant    Tenant          @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, slotType])
   @@map("parking_capacity")
 }
 
 // ---------------------------------------------------------------------------
-// Insurance (geo-localized franchigie)
+// Insurance (geo-localized franchigie for rent bookings)
 // ---------------------------------------------------------------------------
 
 model InsuranceOption {
   id                 String        @id @default(uuid())
+  tenantId           String        @map("tenant_id")
   zone               InsuranceZone
   tier               InsuranceTier
   label              String // e.g. "Franchigia Base", "KASKO Senza Cauzione"
@@ -274,9 +621,10 @@ model InsuranceOption {
   requiresCreditCard Boolean       @default(false) @map("requires_credit_card") // KASKO only
   active             Boolean       @default(true)
 
+  tenant             Tenant        @relation(fields: [tenantId], references: [id])
   bookings           Booking[]
 
-  @@unique([zone, tier])
+  @@unique([tenantId, zone, tier])
   @@map("insurance_options")
 }
 
@@ -286,14 +634,17 @@ model InsuranceOption {
 
 model ExtraService {
   id          String   @id @default(uuid())
-  code        String   @unique // car_wash, child_seat, additional_driver, shuttle
+  tenantId    String   @map("tenant_id")
+  code        String // car_wash, child_seat, additional_driver, shuttle
   label       String
   price       Decimal  @db.Decimal(10, 2)
   perDay      Boolean  @default(false) @map("per_day")
   active      Boolean  @default(true)
 
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
   bookingExtras BookingExtraService[]
 
+  @@unique([tenantId, code])
   @@map("extra_services")
 }
 
@@ -311,16 +662,20 @@ model BookingExtraService {
 }
 
 // ---------------------------------------------------------------------------
-// Bookings
+// Bookings / Contracts
 // ---------------------------------------------------------------------------
 
 model Booking {
   id              String         @id @default(uuid())
+  tenantId        String         @map("tenant_id")
+  locationId      String?        @map("location_id")
+  contractNumber  Int?           @map("contract_number") // sequential per tenant, rent contracts only
   userId          String         @map("user_id")
   serviceType     BookingService @map("service_type")
 
   // Rent
   vehicleId       String?        @map("vehicle_id")
+  authorizedDrivers Json?        @map("authorized_drivers") // [{fullName, licenseNumber}]
 
   // Parking (Parking Go)
   parkingType     ParkingSlotType?  @map("parking_type")
@@ -340,12 +695,20 @@ model Booking {
   totalPrice      Decimal        @db.Decimal(10, 2) @map("total_price")
   depositAmount   Decimal        @default(0) @db.Decimal(10, 2) @map("deposit_amount")
   hasDeposit      Boolean        @default(true) @map("has_deposit")
+  downPaymentAmount Decimal      @default(0) @db.Decimal(10, 2) @map("down_payment_amount") // acconto
 
   priceOverride       Decimal?   @db.Decimal(10, 2) @map("price_override")
   priceOverrideReason  String?   @map("price_override_reason")
   priceOverrideById    String?   @map("price_override_by_id")
 
   paymentStatus   String         @default("pending") @map("payment_status")
+  paymentMethod   PaymentMethod? @map("payment_method")
+
+  // Signature / digital contract (section 4-5)
+  signatureStatus    ContractSignatureStatus @default(none) @map("signature_status")
+  signatureLinkToken String?                 @unique @map("signature_link_token")
+  signatureSentAt    DateTime?               @map("signature_sent_at")
+  signatureCompletedAt DateTime?             @map("signature_completed_at")
 
   // Check-in / check-out (desk operator workflow)
   checkInAt       DateTime?      @map("check_in_at")
@@ -369,6 +732,8 @@ model Booking {
   createdAt       DateTime       @default(now()) @map("created_at")
   updatedAt       DateTime       @updatedAt @map("updated_at")
 
+  tenant          Tenant          @relation(fields: [tenantId], references: [id])
+  siteLocation    Location?       @relation(fields: [locationId], references: [id])
   user            User            @relation("BookingCustomer", fields: [userId], references: [id])
   vehicle         Vehicle?        @relation(fields: [vehicleId], references: [id])
   insuranceOption InsuranceOption? @relation(fields: [insuranceOptionId], references: [id])
@@ -382,7 +747,13 @@ model Booking {
   bumpedByExtensions ExtensionRequest[] @relation("ExtensionBumpedBooking")
   payments        Payment[]
   documentAudits  DocumentAudit[]
+  invoices        Invoice[]
+  damageRecords   DamageRecord[]
+  claims          Claim[]
+  fines           Fine[]
 
+  @@unique([tenantId, contractNumber])
+  @@index([tenantId])
   @@index([userId])
   @@index([vehicleId])
   @@index([startDate, endDate])
@@ -395,6 +766,7 @@ model Booking {
 
 model DocumentAudit {
   id           String              @id @default(uuid())
+  tenantId     String              @map("tenant_id")
   userId       String              @map("user_id")
   bookingId    String?             @map("booking_id")
   documentType DocumentType        @map("document_type")
@@ -405,19 +777,22 @@ model DocumentAudit {
   reviewedAt   DateTime?           @map("reviewed_at")
   createdAt    DateTime            @default(now()) @map("created_at")
 
+  tenant       Tenant   @relation(fields: [tenantId], references: [id])
   user         User     @relation(fields: [userId], references: [id])
   booking      Booking? @relation(fields: [bookingId], references: [id])
   reviewedBy   User?    @relation("DocumentAuditReviewer", fields: [reviewedById], references: [id])
 
+  @@index([tenantId])
   @@map("document_audits")
 }
 
 // ---------------------------------------------------------------------------
-// Damage logging
+// Damage logging (check-in/out flow) - unchanged behaviour, now tenant-scoped
 // ---------------------------------------------------------------------------
 
 model DamageReport {
   id          String   @id @default(uuid())
+  tenantId    String   @map("tenant_id")
   bookingId   String   @map("booking_id")
   photoUrls   String[] @map("photo_urls") // pre-existing damage photos at check-in
   notes       String?
@@ -425,13 +800,16 @@ model DamageReport {
   emailSentAt DateTime? @map("email_sent_at")
   createdAt   DateTime @default(now()) @map("created_at")
 
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
   booking     Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
 
+  @@index([tenantId])
   @@map("damage_reports")
 }
 
 model DamageTicket {
   id                    String             @id @default(uuid())
+  tenantId              String             @map("tenant_id")
   bookingId             String             @map("booking_id")
   description           String
   depositWithheldAmount Decimal            @default(0) @db.Decimal(10, 2) @map("deposit_withheld_amount")
@@ -440,9 +818,252 @@ model DamageTicket {
   createdAt             DateTime           @default(now()) @map("created_at")
   resolvedAt            DateTime?          @map("resolved_at")
 
+  tenant                Tenant             @relation(fields: [tenantId], references: [id])
   booking               Booking            @relation(fields: [bookingId], references: [id], onDelete: Cascade)
 
+  @@index([tenantId])
   @@map("damage_tickets")
+}
+
+// ---------------------------------------------------------------------------
+// Standalone Danni module (section 12) - searchable, independent of check-in
+// ---------------------------------------------------------------------------
+
+model DamageRecord {
+  id              String             @id @default(uuid())
+  tenantId        String             @map("tenant_id")
+  vehicleId       String?            @map("vehicle_id")
+  bookingId       String?            @map("booking_id")
+  customerId      String?            @map("customer_id")
+
+  type            DamageRecordType
+  position        String?
+  photoUrls       String[]           @map("photo_urls")
+  videoUrls       String[]           @map("video_urls")
+  documentUrls    String[]           @map("document_urls")
+  costEstimated   Decimal?           @db.Decimal(10, 2) @map("cost_estimated")
+  costFinal       Decimal?           @db.Decimal(10, 2) @map("cost_final")
+  franchigiaAmount Decimal?          @db.Decimal(10, 2) @map("franchigia_amount")
+  status          DamageRecordStatus @default(aperto)
+  notes           String?
+
+  operatorId      String?            @map("operator_id")
+  date            DateTime           @default(now())
+  createdAt       DateTime           @default(now()) @map("created_at")
+  updatedAt       DateTime           @updatedAt @map("updated_at")
+
+  tenant          Tenant             @relation(fields: [tenantId], references: [id])
+  vehicle         Vehicle?           @relation(fields: [vehicleId], references: [id])
+  booking         Booking?           @relation(fields: [bookingId], references: [id])
+  operator        User?              @relation(fields: [operatorId], references: [id])
+
+  @@index([tenantId])
+  @@index([vehicleId])
+  @@map("damage_records")
+}
+
+// ---------------------------------------------------------------------------
+// Sinistri / Claims (section 13)
+// ---------------------------------------------------------------------------
+
+model Claim {
+  id                String      @id @default(uuid())
+  tenantId          String      @map("tenant_id")
+  vehicleId         String?     @map("vehicle_id")
+  bookingId         String?     @map("booking_id")
+  customerId        String?     @map("customer_id")
+
+  date              DateTime
+  location          String?
+  dynamics          String?
+  photoUrls         String[]    @map("photo_urls")
+  documentUrls      String[]    @map("document_urls")
+  insuranceCompany  String?     @map("insurance_company")
+  franchigiaAmount  Decimal?    @db.Decimal(10, 2) @map("franchigia_amount")
+  status            ClaimStatus @default(aperto)
+  costs             Decimal?    @db.Decimal(10, 2)
+  responsibleParty  String?     @map("responsible_party")
+  notes             String?
+
+  operatorId        String?     @map("operator_id")
+  createdAt         DateTime    @default(now()) @map("created_at")
+  updatedAt         DateTime    @updatedAt @map("updated_at")
+
+  tenant            Tenant      @relation(fields: [tenantId], references: [id])
+  vehicle           Vehicle?    @relation(fields: [vehicleId], references: [id])
+  booking           Booking?    @relation(fields: [bookingId], references: [id])
+  operator          User?       @relation(fields: [operatorId], references: [id])
+
+  @@index([tenantId])
+  @@map("claims")
+}
+
+// ---------------------------------------------------------------------------
+// Blacklist (section 14)
+// ---------------------------------------------------------------------------
+
+model BlacklistEntry {
+  id             String          @id @default(uuid())
+  tenantId       String          @map("tenant_id")
+  customerId     String?         @map("customer_id")
+  fullNameSnapshot String        @map("full_name_snapshot")
+  fiscalCode     String?         @map("fiscal_code")
+  contractId     String?         @map("contract_id")
+  plate          String?
+
+  reason         BlacklistReason
+  details        String
+  amountDue      Decimal?        @db.Decimal(10, 2) @map("amount_due")
+  documentUrls   String[]        @map("document_urls")
+  photoUrls      String[]        @map("photo_urls")
+  status         BlacklistStatus @default(attiva)
+
+  operatorId     String?         @map("operator_id")
+  date           DateTime        @default(now())
+  createdAt      DateTime        @default(now()) @map("created_at")
+  updatedAt      DateTime        @updatedAt @map("updated_at")
+
+  tenant         Tenant          @relation(fields: [tenantId], references: [id])
+  operator       User?           @relation(fields: [operatorId], references: [id])
+
+  @@index([tenantId])
+  @@map("blacklist_entries")
+}
+
+// ---------------------------------------------------------------------------
+// Enti verbalizzanti / PEC directory (section 16)
+// ---------------------------------------------------------------------------
+
+model IssuingAuthority {
+  id           String   @id @default(uuid())
+  tenantId     String   @map("tenant_id")
+  name         String
+  pec          String?
+  source       String? // where the PEC was verified/found
+  verifiedAt   DateTime? @map("verified_at")
+  notes        String?
+
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  tenant       Tenant   @relation(fields: [tenantId], references: [id])
+  fines        Fine[]
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+  @@map("issuing_authorities")
+}
+
+// ---------------------------------------------------------------------------
+// Multe (section 15/17)
+// ---------------------------------------------------------------------------
+
+model Fine {
+  id                 String     @id @default(uuid())
+  tenantId           String     @map("tenant_id")
+  plate              String
+  vehicleId          String?    @map("vehicle_id")
+  contractId         String?    @map("contract_id")
+  customerId         String?    @map("customer_id")
+
+  violationDate      DateTime   @map("violation_date")
+  violationTime      String?    @map("violation_time")
+  verbaleNumber      String     @map("verbale_number")
+  issuingAuthorityId String?    @map("issuing_authority_id")
+  amount             Decimal    @db.Decimal(10, 2)
+  dueDate            DateTime?  @map("due_date")
+  documentUrl        String?    @map("document_url")
+  status             FineStatus @default(da_notificare)
+  appealPdfUrl        String?   @map("appeal_pdf_url")
+
+  operatorId         String?    @map("operator_id")
+  createdAt          DateTime   @default(now()) @map("created_at")
+  updatedAt          DateTime   @updatedAt @map("updated_at")
+
+  tenant             Tenant           @relation(fields: [tenantId], references: [id])
+  vehicle            Vehicle?         @relation(fields: [vehicleId], references: [id])
+  contract           Booking?         @relation(fields: [contractId], references: [id])
+  issuingAuthority   IssuingAuthority? @relation(fields: [issuingAuthorityId], references: [id])
+  operator           User?            @relation(fields: [operatorId], references: [id])
+
+  @@index([tenantId])
+  @@index([plate])
+  @@map("fines")
+}
+
+// ---------------------------------------------------------------------------
+// Officina / Workshop (section 11)
+// ---------------------------------------------------------------------------
+
+model WorkshopCatalogItem {
+  id        String           @id @default(uuid())
+  tenantId  String           @map("tenant_id")
+  category  WorkshopCategory
+  label     String
+  active    Boolean          @default(true)
+
+  tenant    Tenant           @relation(fields: [tenantId], references: [id])
+  interventions WorkshopIntervention[]
+
+  @@unique([tenantId, category, label])
+  @@index([tenantId])
+  @@map("workshop_catalog_items")
+}
+
+model WorkshopIntervention {
+  id              String           @id @default(uuid())
+  tenantId        String           @map("tenant_id")
+  vehicleId       String           @map("vehicle_id")
+  catalogItemId   String?          @map("catalog_item_id")
+  category        WorkshopCategory
+  label           String // snapshot, in case a custom/freeform intervention was used
+
+  price           Decimal?         @db.Decimal(10, 2)
+  parts           String?          @map("parts") // ricambi
+  supplier        String?          // fornitore
+  km              Int?
+  notes           String?
+  documentUrl     String?          @map("document_url")
+  invoiceUrl      String?          @map("invoice_url")
+
+  operatorId      String?          @map("operator_id")
+  date            DateTime         @default(now())
+  createdAt       DateTime         @default(now()) @map("created_at")
+
+  tenant          Tenant               @relation(fields: [tenantId], references: [id])
+  vehicle         Vehicle              @relation(fields: [vehicleId], references: [id])
+  catalogItem     WorkshopCatalogItem? @relation(fields: [catalogItemId], references: [id])
+  operator        User?                @relation(fields: [operatorId], references: [id])
+
+  @@index([tenantId])
+  @@index([vehicleId])
+  @@map("workshop_interventions")
+}
+
+// ---------------------------------------------------------------------------
+// Generic document repository (section 30)
+// ---------------------------------------------------------------------------
+
+model Document {
+  id           String   @id @default(uuid())
+  tenantId     String   @map("tenant_id")
+  entityType   String   @map("entity_type") // customer, contract, vehicle, insurance, fine, claim, workshop, invoice
+  entityId     String   @map("entity_id")
+  fileUrl      String   @map("file_url")
+  fileName     String   @map("file_name")
+  fileType     String   @map("file_type")
+  ocrData      Json?    @map("ocr_data")
+  notes        String?
+
+  uploadedById String?  @map("uploaded_by_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  tenant       Tenant   @relation(fields: [tenantId], references: [id])
+  uploadedBy   User?    @relation(fields: [uploadedById], references: [id])
+
+  @@index([tenantId])
+  @@index([entityType, entityId])
+  @@map("documents")
 }
 
 // ---------------------------------------------------------------------------
@@ -451,6 +1072,7 @@ model DamageTicket {
 
 model ExtensionRequest {
   id                 String            @id @default(uuid())
+  tenantId           String            @map("tenant_id")
   bookingId          String            @map("booking_id") // booking being extended
   channel            ExtensionChannel
   requestedEndDate   DateTime          @map("requested_end_date")
@@ -466,20 +1088,24 @@ model ExtensionRequest {
   createdAt          DateTime          @default(now()) @map("created_at")
   decidedAt          DateTime?         @map("decided_at")
 
+  tenant             Tenant   @relation(fields: [tenantId], references: [id])
   booking            Booking  @relation("ExtensionOriginBooking", fields: [bookingId], references: [id], onDelete: Cascade)
   bumpedBooking       Booking? @relation("ExtensionBumpedBooking", fields: [bumpedBookingId], references: [id])
 
+  @@index([tenantId])
   @@map("extension_requests")
 }
 
 // ---------------------------------------------------------------------------
-// Payments (Stripe)
+// Payments (Stripe / SumUp / cash / bank transfer)
 // ---------------------------------------------------------------------------
 
 model Payment {
   id                    String        @id @default(uuid())
+  tenantId              String        @map("tenant_id")
   bookingId             String        @map("booking_id")
   type                  PaymentType
+  method                PaymentMethod @default(stripe)
   status                PaymentStatus @default(pending)
   amount                Decimal       @db.Decimal(10, 2)
   currency              String        @default("eur")
@@ -492,10 +1118,87 @@ model Payment {
   capturedAt            DateTime?     @map("captured_at")
   canceledAt            DateTime?     @map("canceled_at")
 
+  tenant                Tenant        @relation(fields: [tenantId], references: [id])
   booking               Booking       @relation(fields: [bookingId], references: [id], onDelete: Cascade)
 
+  @@index([tenantId])
   @@index([stripePaymentIntentId])
   @@map("payments")
+}
+
+// ---------------------------------------------------------------------------
+// Fatturazione elettronica (section 18)
+// ---------------------------------------------------------------------------
+
+model Invoice {
+  id            String        @id @default(uuid())
+  tenantId      String        @map("tenant_id")
+  bookingId     String        @map("booking_id")
+  number        String
+  taxableAmount Decimal       @db.Decimal(10, 2) @map("taxable_amount")
+  vatAmount     Decimal       @db.Decimal(10, 2) @map("vat_amount")
+  totalAmount   Decimal       @db.Decimal(10, 2) @map("total_amount")
+  xmlUrl        String?       @map("xml_url")
+  sdiReceiptUrl String?       @map("sdi_receipt_url")
+  status        InvoiceStatus @default(draft)
+  errorMessage  String?       @map("error_message")
+  sentAt        DateTime?     @map("sent_at")
+
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+
+  tenant        Tenant        @relation(fields: [tenantId], references: [id])
+  booking       Booking       @relation(fields: [bookingId], references: [id])
+
+  @@unique([tenantId, number])
+  @@index([tenantId])
+  @@map("invoices")
+}
+
+// ---------------------------------------------------------------------------
+// Cassa - Expenses (section 21)
+// ---------------------------------------------------------------------------
+
+model Expense {
+  id          String          @id @default(uuid())
+  tenantId    String          @map("tenant_id")
+  category    ExpenseCategory
+  amount      Decimal         @db.Decimal(10, 2)
+  description String?
+  date        DateTime        @default(now())
+
+  operatorId  String?         @map("operator_id")
+  createdAt   DateTime        @default(now()) @map("created_at")
+
+  tenant      Tenant          @relation(fields: [tenantId], references: [id])
+  operator    User?           @relation(fields: [operatorId], references: [id])
+
+  @@index([tenantId])
+  @@map("expenses")
+}
+
+// ---------------------------------------------------------------------------
+// Notification / alert center (section 27)
+// ---------------------------------------------------------------------------
+
+model Notification {
+  id         String                @id @default(uuid())
+  tenantId   String                @map("tenant_id")
+  type       NotificationType
+  severity   NotificationSeverity  @default(info)
+  entityType String?               @map("entity_type")
+  entityId   String?               @map("entity_id")
+  message    String
+  readAt     DateTime?             @map("read_at")
+  dismissedAt DateTime?            @map("dismissed_at")
+
+  createdAt  DateTime              @default(now()) @map("created_at")
+
+  tenant     Tenant                @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId])
+  @@index([type])
+  @@map("notifications")
 }
 
 // ---------------------------------------------------------------------------
@@ -504,14 +1207,18 @@ model Payment {
 
 model AuditLog {
   id         String   @id @default(uuid())
+  tenantId   String?  @map("tenant_id")
   actorId    String?  @map("actor_id")
   action     String
   entityType String   @map("entity_type")
   entityId   String?  @map("entity_id")
+  ipAddress  String?  @map("ip_address")
   metadata   Json?
   createdAt  DateTime @default(now()) @map("created_at")
 
+  tenant     Tenant?  @relation(fields: [tenantId], references: [id])
   actor      User?    @relation(fields: [actorId], references: [id])
 
+  @@index([tenantId])
   @@map("audit_log")
 }

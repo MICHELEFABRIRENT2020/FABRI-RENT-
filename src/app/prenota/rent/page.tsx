@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { computeVehiclePrice } from "@/lib/pricing-engine";
+import { getPublicTenant } from "@/lib/tenant";
 import { SiteHeader } from "@/components/site/site-header";
 import { SiteFooter } from "@/components/site/site-footer";
 import { RentCheckoutWizard } from "@/components/booking/rent-checkout-wizard";
@@ -35,8 +36,9 @@ export default async function RentBookingPage({
     );
   }
 
+  const tenant = await getPublicTenant();
   const representative = await prisma.vehicle.findFirst({
-    where: { category, status: "available" },
+    where: { tenantId: tenant.id, category, status: "available" },
     orderBy: { dailyRate: "asc" },
   });
 
@@ -59,6 +61,7 @@ export default async function RentBookingPage({
   }
 
   const { days, total } = await computeVehiclePrice({
+    tenantId: tenant.id,
     vehicleId: representative.id,
     startDate,
     endDate,

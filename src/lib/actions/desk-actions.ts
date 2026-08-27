@@ -2,14 +2,23 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { assertRole } from "@/lib/session";
+import { assertTenant } from "@/lib/session";
+import { logAudit } from "@/lib/audit";
 import { computeOverrunPenaltyDays } from "@/lib/rental-time";
 import { verifyOtp, generateOtp, sendOtpSms } from "@/lib/otp-provider";
 import { sendEmail } from "@/lib/email-provider";
 import { generateDamageReportPdf, generateDamageTicketPdf } from "@/lib/pdf";
 import { captureRemaining, cancelRemaining, toStripeAmount } from "@/lib/stripe";
 import { resolveExtensionRequest } from "@/lib/fleet-engine";
+import type { AppUserRole } from "@/types/next-auth";
 import type { DocumentAuditStatus, CheckInMethod } from "@/generated/prisma/client";
+
+/** Roles allowed to handle vehicle hand-over (check-in/out) and contract operations. */
+const OPERATIONAL_ROLES: AppUserRole[] = ["super_admin", "admin", "responsabile", "operator"];
+
+function assertOperational(role: AppUserRole) {
+  if (!OPERATIONAL_ROLES.includes(role)) throw new Error("Non autorizzato per questa operazione.");
+}
 
 // ---------------------------------------------------------------------------
 // Document audit
@@ -20,16 +29,26 @@ export async function reviewDocument(params: {
   status: DocumentAuditStatus;
   reviewNote?: string;
 }) {
-  const operator = await assertRole("operator", "super_admin");
+  const { user, tenantId } = await assertTenant();
+  assertOperational(user.role);
 
   await prisma.documentAudit.update({
-    where: { id: params.documentAuditId },
+    where: { id: params.documentAuditId, tenantId },
     data: {
       status: params.status,
       reviewNote: params.reviewNote,
-      reviewedById: operator.id,
+      reviewedById: user.id,
       reviewedAt: new Date(),
     },
+  });
+
+  await logAudit({
+    tenantId,
+    actorId: user.id,
+    action: "document_review",
+    entityType: "document_audit",
+    entityId: params.documentAuditId,
+    metadata: { status: params.status },
   });
 
   revalidatePath("/desk");
@@ -40,7 +59,8 @@ export async function reviewDocument(params: {
 // ---------------------------------------------------------------------------
 
 export async function requestCheckInOtp(phone: string) {
-  await assertRole("operator", "super_admin");
+  const { user } = await assertTenant();
+  assertOperational(user.role);
   const code = generateOtp(phone);
   await sendOtpSms(phone, code);
   return { sent: true };
@@ -61,7 +81,8 @@ export async function checkInBooking(params: {
   damagePhotoUrls: string[];
   damageNotes?: string;
 }) {
-  const operator = await assertRole("operator", "super_admin");
+  const { user, tenantId } = await assertTenant();
+  assertOperational(user.role);
 
   if (params.method === "otp_sms") {
     if (!params.otpPhone || !params.otpCode || !verifyOtp(params.otpPhone, params.otpCode)) {
@@ -72,7 +93,7 @@ export async function checkInBooking(params: {
   }
 
   const booking = await prisma.booking.update({
-    where: { id: params.bookingId },
+    where: { id: params.bookingId, tenantId },
     data: {
       checkInAt: new Date(),
       checkInKm: params.km,
@@ -80,7 +101,7 @@ export async function checkInBooking(params: {
       checkInMethod: params.method,
       signatureUrl: params.signatureUrl,
       otpVerifiedAt: params.method === "otp_sms" ? new Date() : undefined,
-      operatorId: operator.id,
+      operatorId: user.id,
       status: "checked_in",
     },
     include: { vehicle: true, user: true },
@@ -99,6 +120,7 @@ export async function checkInBooking(params: {
 
     await prisma.damageReport.create({
       data: {
+        tenantId,
         bookingId: booking.id,
         photoUrls: params.damagePhotoUrls,
         notes: params.damageNotes,
@@ -107,11 +129,13 @@ export async function checkInBooking(params: {
 
     await sendEmail({
       to: booking.user.email,
-      subject: "Fabri GROUP - Report danni preesistenti e contratto di noleggio",
+      subject: "FabriGroup Rent Manager - Report danni preesistenti e contratto di noleggio",
       html: `<p>Gentile ${booking.user.fullName}, in allegato il report fotografico e il contratto di noleggio relativo alla prenotazione ${booking.id}.</p>`,
       attachments: [{ filename: "report-contratto.pdf", content: Buffer.from(pdfBytes), contentType: "application/pdf" }],
     });
   }
+
+  await logAudit({ tenantId, actorId: user.id, action: "check_in", entityType: "booking", entityId: booking.id });
 
   revalidatePath("/desk");
   revalidatePath(`/desk/prenotazioni/${params.bookingId}`);
@@ -130,10 +154,11 @@ export async function checkOutBooking(params: {
   damageDescription?: string;
   damageWithheldAmount?: number;
 }) {
-  await assertRole("operator", "super_admin");
+  const { user, tenantId } = await assertTenant();
+  assertOperational(user.role);
 
-  const booking = await prisma.booking.findUniqueOrThrow({
-    where: { id: params.bookingId },
+  const booking = await prisma.booking.findFirstOrThrow({
+    where: { id: params.bookingId, tenantId },
     include: { vehicle: true, user: true, payments: true },
   });
 
@@ -187,6 +212,7 @@ export async function checkOutBooking(params: {
 
     await prisma.damageTicket.create({
       data: {
+        tenantId,
         bookingId: booking.id,
         description: params.damageDescription,
         depositWithheldAmount: damageWithheld,
@@ -196,11 +222,20 @@ export async function checkOutBooking(params: {
 
     await sendEmail({
       to: booking.user.email,
-      subject: "Fabri GROUP - Report danni al check-out",
+      subject: "FabriGroup Rent Manager - Report danni al check-out",
       html: `<p>Gentile ${booking.user.fullName}, in allegato il report danni riscontrati al rientro del veicolo (prenotazione ${booking.id}).</p>`,
       attachments: [{ filename: "report-danni.pdf", content: Buffer.from(pdfBytes), contentType: "application/pdf" }],
     });
   }
+
+  await logAudit({
+    tenantId,
+    actorId: user.id,
+    action: "check_out",
+    entityType: "booking",
+    entityId: booking.id,
+    metadata: { penaltyDays, penaltyAmount, totalWithheld },
+  });
 
   revalidatePath("/desk");
   revalidatePath(`/desk/prenotazioni/${params.bookingId}`);
@@ -212,25 +247,25 @@ export async function checkOutBooking(params: {
 // ---------------------------------------------------------------------------
 
 export async function overrideBookingPrice(params: { bookingId: string; newTotal: number; reason: string }) {
-  const operator = await assertRole("operator", "super_admin");
+  const { user, tenantId } = await assertTenant();
+  assertOperational(user.role);
 
   await prisma.booking.update({
-    where: { id: params.bookingId },
+    where: { id: params.bookingId, tenantId },
     data: {
       priceOverride: params.newTotal,
       priceOverrideReason: params.reason,
-      priceOverrideById: operator.id,
+      priceOverrideById: user.id,
     },
   });
 
-  await prisma.auditLog.create({
-    data: {
-      actorId: operator.id,
-      action: "price_override",
-      entityType: "booking",
-      entityId: params.bookingId,
-      metadata: { newTotal: params.newTotal, reason: params.reason },
-    },
+  await logAudit({
+    tenantId,
+    actorId: user.id,
+    action: "price_override",
+    entityType: "booking",
+    entityId: params.bookingId,
+    metadata: { newTotal: params.newTotal, reason: params.reason },
   });
 
   revalidatePath(`/desk/prenotazioni/${params.bookingId}`);
@@ -245,8 +280,11 @@ export async function createExtensionRequest(params: {
   requestedEndDate: string;
   channel: "whatsapp" | "web";
 }) {
+  const { tenantId } = await assertTenant();
+
   await prisma.extensionRequest.create({
     data: {
+      tenantId,
       bookingId: params.bookingId,
       requestedEndDate: new Date(params.requestedEndDate),
       channel: params.channel,
@@ -256,10 +294,12 @@ export async function createExtensionRequest(params: {
 }
 
 export async function decideExtensionRequest(extensionRequestId: string) {
-  const operator = await assertRole("operator", "super_admin");
+  const { user, tenantId } = await assertTenant();
+  assertOperational(user.role);
 
-  const request = await prisma.extensionRequest.findUniqueOrThrow({ where: { id: extensionRequestId } });
+  const request = await prisma.extensionRequest.findFirstOrThrow({ where: { id: extensionRequestId, tenantId } });
   const resolution = await resolveExtensionRequest({
+    tenantId,
     bookingId: request.bookingId,
     requestedEndDate: request.requestedEndDate,
   });
@@ -267,7 +307,7 @@ export async function decideExtensionRequest(extensionRequestId: string) {
   if (!resolution.approved) {
     await prisma.extensionRequest.update({
       where: { id: extensionRequestId },
-      data: { status: "rejected", decidedById: operator.id, decidedAt: new Date() },
+      data: { status: "rejected", decidedById: user.id, decidedAt: new Date() },
     });
     revalidatePath("/desk/prolungamenti");
     return { approved: false as const };
@@ -292,10 +332,19 @@ export async function decideExtensionRequest(extensionRequestId: string) {
         status: "approved",
         bumpedBookingId: resolution.bumpedBookingId,
         reassignedVehicleId: resolution.reassignedVehicleId,
-        decidedById: operator.id,
+        decidedById: user.id,
         decidedAt: new Date(),
       },
     });
+  });
+
+  await logAudit({
+    tenantId,
+    actorId: user.id,
+    action: "extension_approved",
+    entityType: "booking",
+    entityId: request.bookingId,
+    metadata: { bumpedBookingId: resolution.bumpedBookingId },
   });
 
   revalidatePath("/desk/prolungamenti");

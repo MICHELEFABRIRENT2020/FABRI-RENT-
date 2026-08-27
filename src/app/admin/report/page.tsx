@@ -4,15 +4,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Download } from "lucide-react";
+import { requireTenant } from "@/lib/session";
 
 export default async function AdminReportPage({
   searchParams,
 }: {
   searchParams: Promise<{ from?: string; to?: string }>;
 }) {
+  const { tenantId } = await requireTenant();
   const { from, to } = await searchParams;
 
   const where = {
+    tenantId,
     createdAt: {
       gte: from ? new Date(from) : undefined,
       lte: to ? new Date(to) : undefined,

@@ -6,6 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatItalianDate } from "@/lib/rental-time";
+import { requireTenant } from "@/lib/session";
 
 const STATUS_LABEL: Record<string, string> = {
   confirmed: "Confermata",
@@ -27,18 +28,19 @@ export default async function DeskDashboardPage({
 }: {
   searchParams: Promise<{ date?: string }>;
 }) {
+  const { tenantId } = await requireTenant();
   const { date } = await searchParams;
   const selectedDate = date ?? new Date().toISOString().slice(0, 10);
   const { start, end } = dayRange(selectedDate);
 
   const [arrivals, departures] = await Promise.all([
     prisma.booking.findMany({
-      where: { startDate: { gte: start, lt: end }, status: { not: "canceled" } },
+      where: { tenantId, startDate: { gte: start, lt: end }, status: { not: "canceled" } },
       include: { user: true, vehicle: true },
       orderBy: { startDate: "asc" },
     }),
     prisma.booking.findMany({
-      where: { endDate: { gte: start, lt: end }, status: { not: "canceled" } },
+      where: { tenantId, endDate: { gte: start, lt: end }, status: { not: "canceled" } },
       include: { user: true, vehicle: true },
       orderBy: { endDate: "asc" },
     }),

@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { checkParkingAvailability } from "@/lib/parking-engine";
 import { computeParkingPrice } from "@/lib/pricing-engine";
+import { getPublicTenant } from "@/lib/tenant";
 import { SiteHeader } from "@/components/site/site-header";
 import { SiteFooter } from "@/components/site/site-footer";
 import { ParkingCheckoutWizard } from "@/components/booking/parking-checkout-wizard";
@@ -41,10 +42,11 @@ export default async function ParkingBookingPage({
 
   const parkingCategory = category as ParkingCategory;
   const parkingSlotType = slotType as ParkingSlotType;
+  const tenant = await getPublicTenant();
 
   const [availability, price] = await Promise.all([
-    checkParkingAvailability({ slotType: parkingSlotType, startDate, endDate }),
-    computeParkingPrice({ category: parkingCategory, slotType: parkingSlotType, startDate, endDate }),
+    checkParkingAvailability({ tenantId: tenant.id, slotType: parkingSlotType, startDate, endDate }),
+    computeParkingPrice({ tenantId: tenant.id, category: parkingCategory, slotType: parkingSlotType, startDate, endDate }),
   ]);
 
   if (!availability.available) {

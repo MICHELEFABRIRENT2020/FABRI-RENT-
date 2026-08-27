@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { checkParkingAvailability } from "@/lib/parking-engine";
 import { computeParkingPrice } from "@/lib/pricing-engine";
+import { getPublicTenant } from "@/lib/tenant";
 import type { ParkingCategory, ParkingSlotType } from "@/generated/prisma/client";
 
 export async function GET(req: NextRequest) {
@@ -16,10 +17,11 @@ export async function GET(req: NextRequest) {
 
   const startDate = new Date(start);
   const endDate = new Date(end);
+  const tenant = await getPublicTenant();
 
   const [availability, price] = await Promise.all([
-    checkParkingAvailability({ slotType, startDate, endDate }),
-    computeParkingPrice({ category, slotType, startDate, endDate }),
+    checkParkingAvailability({ tenantId: tenant.id, slotType, startDate, endDate }),
+    computeParkingPrice({ tenantId: tenant.id, category, slotType, startDate, endDate }),
   ]);
 
   return NextResponse.json({ ...availability, ...price });

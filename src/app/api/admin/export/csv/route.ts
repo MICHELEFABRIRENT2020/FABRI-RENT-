@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { assertRole } from "@/lib/session";
+import { assertTenant, ADMIN_ROLES } from "@/lib/session";
 
 function csvEscape(value: unknown): string {
   const str = String(value ?? "");
@@ -9,8 +9,13 @@ function csvEscape(value: unknown): string {
 }
 
 export async function GET(req: NextRequest) {
+  let tenantId: string;
   try {
-    await assertRole("super_admin");
+    const session = await assertTenant();
+    if (!ADMIN_ROLES.includes(session.user.role) && session.user.role !== "contabilita") {
+      throw new Error("Non autorizzato");
+    }
+    tenantId = session.tenantId;
   } catch {
     return NextResponse.json({ error: "Non autorizzato" }, { status: 403 });
   }
@@ -21,6 +26,7 @@ export async function GET(req: NextRequest) {
 
   const bookings = await prisma.booking.findMany({
     where: {
+      tenantId,
       createdAt: {
         gte: from ? new Date(from) : undefined,
         lte: to ? new Date(to) : undefined,

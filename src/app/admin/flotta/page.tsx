@@ -2,9 +2,11 @@ import { prisma } from "@/lib/prisma";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { VehicleForm } from "@/components/admin/vehicle-form";
 import { VehicleTable } from "@/components/admin/vehicle-table";
+import { requireTenant } from "@/lib/session";
 
 export default async function AdminFleetPage() {
-  const vehicles = await prisma.vehicle.findMany({ orderBy: [{ category: "asc" }, { name: "asc" }] });
+  const { tenantId } = await requireTenant();
+  const vehicles = await prisma.vehicle.findMany({ where: { tenantId }, orderBy: [{ category: "asc" }, { name: "asc" }] });
   const dto = vehicles.map((v) => ({
     id: v.id,
     name: v.name,

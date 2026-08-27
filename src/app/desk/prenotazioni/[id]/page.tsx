@@ -8,12 +8,14 @@ import { DocumentAuditPanel } from "@/components/desk/document-audit-panel";
 import { CheckInPanel } from "@/components/desk/checkin-panel";
 import { CheckOutPanel } from "@/components/desk/checkout-panel";
 import { PriceOverridePanel } from "@/components/desk/price-override-panel";
+import { requireTenant } from "@/lib/session";
 
 export default async function DeskBookingDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  const { tenantId } = await requireTenant();
 
-  const booking = await prisma.booking.findUnique({
-    where: { id },
+  const booking = await prisma.booking.findFirst({
+    where: { id, tenantId },
     include: {
       user: true,
       vehicle: true,
@@ -28,7 +30,7 @@ export default async function DeskBookingDetailPage({ params }: { params: Promis
   if (!booking) notFound();
 
   const documents = await prisma.documentAudit.findMany({
-    where: { userId: booking.userId },
+    where: { tenantId, userId: booking.userId },
     orderBy: { createdAt: "desc" },
   });
 

@@ -1,10 +1,12 @@
 import { prisma } from "@/lib/prisma";
 import { ExtensionRequestForm } from "@/components/desk/extension-request-form";
 import { ExtensionRequestList } from "@/components/desk/extension-request-list";
+import { requireTenant } from "@/lib/session";
 
 export default async function ExtensionsPage() {
+  const { tenantId } = await requireTenant();
   const requests = await prisma.extensionRequest.findMany({
-    where: { status: "pending" },
+    where: { tenantId, status: "pending" },
     include: { booking: { include: { user: true, vehicle: true } } },
     orderBy: { createdAt: "desc" },
   });
