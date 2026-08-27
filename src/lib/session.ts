@@ -56,6 +56,9 @@ export const WRITE_ROLES: AppUserRole[] = ["super_admin", "admin", "responsabile
 /** Roles allowed into the governance/admin panel. */
 export const ADMIN_ROLES: AppUserRole[] = ["super_admin", "admin", "responsabile"];
 
+/** Sensitive registry: visibility limited to management + desk roles (not officina/contabilita/visualizzatore). */
+export const BLACKLIST_ROLES: AppUserRole[] = ["super_admin", "admin", "responsabile", "operator"];
+
 export function canWrite(role: AppUserRole): boolean {
   return WRITE_ROLES.includes(role);
 }
