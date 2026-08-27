@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { requireRole, ADMIN_ROLES } from "@/lib/session";
 import { UserNav } from "@/components/site/user-nav";
+import { NotificationBell } from "@/components/site/notification-bell";
 import { prisma } from "@/lib/prisma";
+import { refreshNotifications, listActiveNotifications } from "@/lib/notifications";
 
 const NAV = [
   { href: "/admin", label: "Dashboard" },
@@ -16,6 +18,8 @@ const NAV = [
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const user = await requireRole(...ADMIN_ROLES);
   const tenant = user.tenantId ? await prisma.tenant.findUnique({ where: { id: user.tenantId } }) : null;
+  if (user.tenantId) await refreshNotifications(user.tenantId);
+  const notifications = user.tenantId ? await listActiveNotifications(user.tenantId) : [];
 
   return (
     <div className="dark flex min-h-screen flex-col bg-background text-foreground">
@@ -27,7 +31,10 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             </Link>
             {tenant && <span className="hidden text-xs text-muted-foreground sm:inline">{tenant.name}</span>}
           </div>
-          <UserNav user={user} />
+          <div className="flex items-center gap-1">
+            <NotificationBell notifications={notifications} />
+            <UserNav user={user} />
+          </div>
         </div>
         <nav className="mx-auto flex w-full max-w-7xl flex-wrap gap-1 px-4 pb-2 text-sm">
           {NAV.map((item) => (

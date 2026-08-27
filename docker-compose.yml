@@ -1,0 +1,41 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: fabrirent
+      POSTGRES_PASSWORD: fabrirent_dev
+      POSTGRES_DB: fabrirent
+    ports:
+      - "5432:5432"
+    volumes:
+      - fabrirent_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fabrirent"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: "postgresql://fabrirent:fabrirent_dev@db:5432/fabrirent?schema=public"
+      AUTH_SECRET: "${AUTH_SECRET:?set AUTH_SECRET in .env - generate with: openssl rand -base64 32}"
+      NEXTAUTH_URL: "${NEXTAUTH_URL:-http://localhost:3000}"
+      STRIPE_SECRET_KEY: "${STRIPE_SECRET_KEY:-}"
+      NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: "${NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY:-}"
+      STRIPE_WEBHOOK_SECRET: "${STRIPE_WEBHOOK_SECRET:-}"
+      SMS_PROVIDER_API_KEY: "${SMS_PROVIDER_API_KEY:-}"
+      EMAIL_PROVIDER_API_KEY: "${EMAIL_PROVIDER_API_KEY:-}"
+      AI_VISION_API_KEY: "${AI_VISION_API_KEY:-}"
+      ARUBA_SDI_API_KEY: "${ARUBA_SDI_API_KEY:-}"
+      ARUBA_SDI_ENDPOINT: "${ARUBA_SDI_ENDPOINT:-}"
+
+volumes:
+  fabrirent_db_data:
