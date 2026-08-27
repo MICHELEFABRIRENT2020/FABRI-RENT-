@@ -64,6 +64,7 @@ export function InsuranceSelector({
   const zone = resolveInsuranceZone(region);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- standard fetch-on-dependency-change loading flag
     setLoading(true);
     fetch(`/api/insurance-options?zone=${zone}`)
       .then((r) => r.json())
@@ -136,8 +137,8 @@ export function InsuranceSelector({
       {options.find((o) => o.id === selectedId)?.requiresCreditCard && paymentMethod !== "credit_card" && (
         <Alert>
           <AlertDescription>
-            Hai selezionato KASKO Senza Cauzione: al passo successivo scegli "Carta di Credito" come metodo di
-            pagamento.
+            Hai selezionato KASKO Senza Cauzione: al passo successivo scegli &quot;Carta di Credito&quot; come metodo
+            di pagamento.
           </AlertDescription>
         </Alert>
       )}

@@ -137,7 +137,7 @@ export function ParkingCheckoutWizard({
                 <InvoiceForm values={invoice} onChange={setInvoice} />
                 <Separator />
                 <div>
-                  <h4 className="mb-3 text-sm font-semibold">Documenti di identita' (4 file)</h4>
+                  <h4 className="mb-3 text-sm font-semibold">Documenti di identita&apos; (4 file)</h4>
                   <DocumentUploader
                     values={documents}
                     onChange={(key, url) => setDocuments((d) => ({ ...d, [key]: url }))}

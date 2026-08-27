@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import { prisma } from "@/lib/prisma";
 import { computeBillableDays } from "@/lib/rental-time";
 import { computeVehiclePrice, computeParkingPrice, computeInsurancePrice, computeExtrasPrice } from "@/lib/pricing-engine";
@@ -11,7 +12,7 @@ import {
   toStripeAmount,
 } from "@/lib/stripe";
 import type { CreateBookingInput } from "@/lib/validation/booking";
-import type { DocumentType } from "@/generated/prisma/client";
+import type { DocumentType, Prisma } from "@/generated/prisma/client";
 
 const HQ_LOCATION = "Via Privata Detta Sacra 33";
 
@@ -53,7 +54,7 @@ async function upsertCustomer(customer: CreateBookingInput["customer"]) {
   });
 }
 
-async function createDocumentAudits(userId: string, bookingId: string, customer: CreateBookingInput["customer"]) {
+function documentAuditRows(userId: string, bookingId: string, customer: CreateBookingInput["customer"]) {
   const slots: { type: DocumentType; url?: string }[] = [
     { type: "id_card_front", url: customer.idCardFrontUrl },
     { type: "id_card_back", url: customer.idCardBackUrl },
@@ -61,26 +62,25 @@ async function createDocumentAudits(userId: string, bookingId: string, customer:
     { type: "license_back", url: customer.licenseBackUrl },
   ];
 
-  const rows = slots.filter((s) => s.url);
-  if (rows.length === 0) return;
-
-  await prisma.documentAudit.createMany({
-    data: rows.map((s) => ({
-      userId,
-      bookingId,
-      documentType: s.type,
-      fileUrl: s.url as string,
-    })),
-  });
+  return slots
+    .filter((s) => s.url)
+    .map((s) => ({ userId, bookingId, documentType: s.type, fileUrl: s.url as string }));
 }
 
+/**
+ * Every Stripe PaymentIntent is created BEFORE any booking row is persisted,
+ * using a pre-generated booking id. This way a Stripe failure never leaves
+ * an orphaned, unpayable booking behind - only the (idempotent) customer
+ * upsert happens first. The booking + extras + document audits + payment
+ * row(s) are then written atomically in a single transaction.
+ */
 export async function createBooking(input: CreateBookingInput) {
   const startDate = new Date(input.startDate);
   const endDate = new Date(input.endDate);
   const days = computeBillableDays(startDate, endDate);
   const customerUser = await upsertCustomer(input.customer);
-
   const extrasResult = await computeExtrasPrice(input.extras, days);
+  const bookingId = crypto.randomUUID();
 
   if (input.serviceType === "rent") {
     const vehicle = await assignVehicleForBooking({
@@ -105,50 +105,43 @@ export async function createBooking(input: CreateBookingInput) {
     const kasko = isKasko(insuranceOption.tier);
     const depositAmount = kasko ? 0 : Number(insuranceOption.residualDeductible);
 
-    const booking = await prisma.booking.create({
-      data: {
-        userId: customerUser.id,
-        serviceType: "rent",
-        vehicleId: vehicle.id,
-        startDate,
-        endDate,
-        location: HQ_LOCATION,
-        insuranceOptionId: insuranceOption.id,
-        basePrice,
-        insurancePrice,
-        extrasPrice: extrasResult.total,
-        totalPrice,
-        depositAmount,
-        hasDeposit: !kasko,
-        extras: {
-          create: extrasResult.lines.map((l) => ({
-            extraServiceId: l.extraServiceId,
-            quantity: l.quantity,
-            unitPrice: l.unitPrice,
-          })),
-        },
+    const bookingData: Prisma.BookingCreateInput = {
+      id: bookingId,
+      user: { connect: { id: customerUser.id } },
+      serviceType: "rent",
+      vehicle: { connect: { id: vehicle.id } },
+      startDate,
+      endDate,
+      location: HQ_LOCATION,
+      insuranceOption: { connect: { id: insuranceOption.id } },
+      basePrice,
+      insurancePrice,
+      extrasPrice: extrasResult.total,
+      totalPrice,
+      depositAmount,
+      hasDeposit: !kasko,
+      extras: {
+        create: extrasResult.lines.map((l) => ({
+          extraServiceId: l.extraServiceId,
+          quantity: l.quantity,
+          unitPrice: l.unitPrice,
+        })),
       },
-    });
+    };
 
-    await createDocumentAudits(customerUser.id, booking.id, input.customer);
+    let clientSecret: string | null;
+    let paymentRows: Prisma.PaymentCreateManyInput[];
 
-    let clientSecret: string | null = null;
     if (kasko) {
       const intent = await createKaskoDirectCharge({
         amountEuroCents: toStripeAmount(totalPrice),
-        bookingId: booking.id,
+        bookingId,
         customerEmail: customerUser.email,
       });
-      await prisma.payment.create({
-        data: {
-          bookingId: booking.id,
-          type: "kasko_charge",
-          amount: totalPrice,
-          captureMethod: "automatic",
-          stripePaymentIntentId: intent.id,
-        },
-      });
       clientSecret = intent.client_secret;
+      paymentRows = [
+        { bookingId, type: "kasko_charge", amount: totalPrice, captureMethod: "automatic", stripePaymentIntentId: intent.id },
+      ];
     } else {
       // Single PaymentIntent authorizes rental + deposit together (manual
       // capture). The webhook captures the rental portion immediately on
@@ -156,30 +149,21 @@ export async function createBooking(input: CreateBookingInput) {
       const combinedIntent = await createRentalWithDepositIntent({
         rentalAmountEuroCents: toStripeAmount(totalPrice),
         depositAmountEuroCents: toStripeAmount(depositAmount),
-        bookingId: booking.id,
+        bookingId,
         customerEmail: customerUser.email,
       });
-      await prisma.payment.create({
-        data: {
-          bookingId: booking.id,
-          type: "rental_charge",
-          amount: totalPrice,
-          captureMethod: "manual",
-          stripePaymentIntentId: combinedIntent.id,
-        },
-      });
-      await prisma.payment.create({
-        data: {
-          bookingId: booking.id,
-          type: "deposit_authorization",
-          amount: depositAmount,
-          captureMethod: "manual",
-          stripePaymentIntentId: combinedIntent.id,
-        },
-      });
-
       clientSecret = combinedIntent.client_secret;
+      paymentRows = [
+        { bookingId, type: "rental_charge", amount: totalPrice, captureMethod: "manual", stripePaymentIntentId: combinedIntent.id },
+        { bookingId, type: "deposit_authorization", amount: depositAmount, captureMethod: "manual", stripePaymentIntentId: combinedIntent.id },
+      ];
     }
+
+    const [booking] = await prisma.$transaction([
+      prisma.booking.create({ data: bookingData }),
+      prisma.documentAudit.createMany({ data: documentAuditRows(customerUser.id, bookingId, input.customer) }),
+      prisma.payment.createMany({ data: paymentRows }),
+    ]);
 
     return { booking, clientSecret };
   }
@@ -204,47 +188,43 @@ export async function createBooking(input: CreateBookingInput) {
   });
   const totalPrice = Number((basePrice + extrasResult.total).toFixed(2));
 
-  const booking = await prisma.booking.create({
-    data: {
-      userId: customerUser.id,
-      serviceType: "parking",
-      parkingType: input.parkingType,
-      parkingCategory: input.parkingCategory,
-      keysLeft: input.keysLeft,
-      startDate,
-      endDate,
-      location: HQ_LOCATION,
-      basePrice,
-      extrasPrice: extrasResult.total,
-      totalPrice,
-      depositAmount: 0,
-      hasDeposit: false,
-      extras: {
-        create: extrasResult.lines.map((l) => ({
-          extraServiceId: l.extraServiceId,
-          quantity: l.quantity,
-          unitPrice: l.unitPrice,
-        })),
-      },
-    },
-  });
-
-  await createDocumentAudits(customerUser.id, booking.id, input.customer);
-
   const intent = await createRentalChargeIntent({
     amountEuroCents: toStripeAmount(totalPrice),
-    bookingId: booking.id,
+    bookingId,
     customerEmail: customerUser.email,
   });
-  await prisma.payment.create({
-    data: {
-      bookingId: booking.id,
-      type: "rental_charge",
-      amount: totalPrice,
-      captureMethod: "automatic",
-      stripePaymentIntentId: intent.id,
+
+  const bookingData: Prisma.BookingCreateInput = {
+    id: bookingId,
+    user: { connect: { id: customerUser.id } },
+    serviceType: "parking",
+    parkingType: input.parkingType,
+    parkingCategory: input.parkingCategory,
+    keysLeft: input.keysLeft,
+    startDate,
+    endDate,
+    location: HQ_LOCATION,
+    basePrice,
+    extrasPrice: extrasResult.total,
+    totalPrice,
+    depositAmount: 0,
+    hasDeposit: false,
+    extras: {
+      create: extrasResult.lines.map((l) => ({
+        extraServiceId: l.extraServiceId,
+        quantity: l.quantity,
+        unitPrice: l.unitPrice,
+      })),
     },
-  });
+  };
+
+  const [booking] = await prisma.$transaction([
+    prisma.booking.create({ data: bookingData }),
+    prisma.documentAudit.createMany({ data: documentAuditRows(customerUser.id, bookingId, input.customer) }),
+    prisma.payment.create({
+      data: { bookingId, type: "rental_charge", amount: totalPrice, captureMethod: "automatic", stripePaymentIntentId: intent.id },
+    }),
+  ]);
 
   return { booking, clientSecret: intent.client_secret };
 }

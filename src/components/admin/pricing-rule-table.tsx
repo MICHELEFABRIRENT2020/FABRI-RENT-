@@ -33,7 +33,7 @@ export function PricingRuleTable({ rules }: { rules: PricingRuleDto[] }) {
           <TableHead>Tipo</TableHead>
           <TableHead>Categoria</TableHead>
           <TableHead>Moltiplicatore</TableHead>
-          <TableHead>Priorita'</TableHead>
+          <TableHead>Priorita&apos;</TableHead>
           <TableHead>Attiva</TableHead>
           <TableHead />
         </TableRow>

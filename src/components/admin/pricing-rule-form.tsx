@@ -93,14 +93,14 @@ export function PricingRuleForm() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="date_range">Intervallo date (alta stagione / ponte)</SelectItem>
-                <SelectItem value="holiday">Festivita'</SelectItem>
+                <SelectItem value="holiday">Festivita&apos;</SelectItem>
                 <SelectItem value="weekday">Feriali (Lun-Ven)</SelectItem>
                 <SelectItem value="weekend">Weekend (Sab-Dom)</SelectItem>
               </SelectContent>
             </Select>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="priority">Priorita'</Label>
+            <Label htmlFor="priority">Priorita&apos;</Label>
             <Input id="priority" type="number" value={priority} onChange={(e) => setPriority(e.target.value)} />
           </div>
         </div>

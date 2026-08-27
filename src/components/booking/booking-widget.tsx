@@ -107,7 +107,7 @@ function RentTab({ onSearch }: { onSearch: (params: Record<string, string>) => v
         </Select>
       </div>
       <Button type="submit" size="lg" className="sm:col-span-2">
-        Cerca disponibilita'
+        Cerca disponibilita&apos;
       </Button>
     </form>
   );
@@ -172,7 +172,7 @@ function ParkingTab({ onSearch }: { onSearch: (params: Record<string, string>) =
         </Label>
       </div>
       <Button type="submit" size="lg" className="sm:col-span-2">
-        Verifica disponibilita'
+        Verifica disponibilita&apos;
       </Button>
     </form>
   );

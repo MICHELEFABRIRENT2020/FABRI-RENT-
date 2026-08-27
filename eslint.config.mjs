@@ -12,7 +12,18 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Vendored Claude Code skill (installed as a plugin, not app source).
+    ".claude/**",
+    "src/generated/**",
   ]),
+  {
+    // shadcn/ui-generated component library files: re-synced verbatim by
+    // `shadcn add`, so lint fixes here would just get overwritten upstream.
+    files: ["src/components/ui/**", "src/hooks/use-mobile.ts"],
+    rules: {
+      "react-hooks/set-state-in-effect": "off",
+    },
+  },
 ]);
 
 export default eslintConfig;
