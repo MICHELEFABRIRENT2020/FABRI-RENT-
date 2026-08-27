@@ -31,7 +31,13 @@ const SECURITY_HEADERS = [
 ];
 
 const nextConfig: NextConfig = {
-  output: "standalone",
+  // "standalone" is for the self-hosted Docker deploy (Dockerfile copies
+  // .next/standalone and runs server.js directly - see DEPLOYMENT.md). On
+  // Vercel it must stay unset: Vercel's own build packaging is incompatible
+  // with standalone output and fails in its post-build step with an ENOENT
+  // on .next/next-server (confirmed against public Vercel/Next.js reports -
+  // see e.g. vercel/next.js#43654). Vercel sets VERCEL=1 during its builds.
+  output: process.env.VERCEL ? undefined : "standalone",
   async headers() {
     return [{ source: "/:path*", headers: SECURITY_HEADERS }];
   },
