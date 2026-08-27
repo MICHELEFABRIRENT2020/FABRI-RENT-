@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { updateTenantProfile } from "@/lib/actions/admin-actions";
+import { AddressAutocomplete } from "@/components/site/address-autocomplete";
 
 export type TenantProfileDto = { name: string; vatNumber: string; pec: string; sdiCode: string; address: string };
 
@@ -53,7 +54,7 @@ export function TenantProfileForm({ profile }: { profile: TenantProfileDto }) {
           </div>
           <div className="space-y-2 sm:col-span-2">
             <Label>Indirizzo sede</Label>
-            <Input value={values.address} onChange={(e) => setValues((v) => ({ ...v, address: e.target.value }))} />
+            <AddressAutocomplete value={values.address} onChange={(address) => setValues((v) => ({ ...v, address }))} />
           </div>
         </div>
         <Button onClick={handleSubmit} disabled={isPending}>

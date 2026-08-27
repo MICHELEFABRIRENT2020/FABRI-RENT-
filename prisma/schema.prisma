@@ -331,6 +331,13 @@ model Tenant {
   pec       String?
   sdiCode   String?  @map("sdi_code")
   address   String?
+  // Google Geocoding (section 3) - populated by src/lib/maps.ts when
+  // GOOGLE_MAPS_API_KEY is configured and the address is saved; null
+  // otherwise ("Come raggiungerci" then falls back to a plain Maps search
+  // link instead of a precise directions link).
+  latitude  Decimal? @db.Decimal(9, 6)
+  longitude Decimal? @db.Decimal(9, 6)
+  placeId   String?  @map("place_id")
   logoUrl   String?  @map("logo_url")
 
   nextContractNumber Int @default(1) @map("next_contract_number")

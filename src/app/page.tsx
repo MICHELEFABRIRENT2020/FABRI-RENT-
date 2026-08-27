@@ -5,6 +5,7 @@ import { SiteFooter } from "@/components/site/site-footer";
 import { Card, CardContent } from "@/components/ui/card";
 import { ShieldCheck, Clock, MapPin, CreditCard } from "lucide-react";
 import { getPublicTenant } from "@/lib/tenant";
+import { DirectionsCard } from "@/components/site/directions-card";
 
 const HIGHLIGHTS = [
   {
@@ -66,6 +67,19 @@ export default async function Home() {
             </Card>
           ))}
         </section>
+
+        {tenant.address && (
+          <section className="mx-auto w-full max-w-5xl px-4 pb-16">
+            <DirectionsCard
+              address={tenant.address}
+              officeCoordinates={
+                tenant.latitude != null && tenant.longitude != null
+                  ? { latitude: Number(tenant.latitude), longitude: Number(tenant.longitude) }
+                  : null
+              }
+            />
+          </section>
+        )}
       </main>
       <SiteFooter />
     </>

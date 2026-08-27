@@ -6,6 +6,7 @@ import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { assertTenant, ADMIN_ROLES } from "@/lib/session";
 import { logAudit } from "@/lib/audit";
+import { geocodeAddress } from "@/lib/maps";
 import type { AppUserRole } from "@/types/next-auth";
 import type { ParkingCategory, ParkingSlotType, PricingRuleType, PricingScope, VehicleStatus } from "@/generated/prisma/client";
 
@@ -354,6 +355,13 @@ export async function updateContractSettings(params: {
 
 export async function updateTenantProfile(params: { name: string; vatNumber?: string; pec?: string; sdiCode?: string; address?: string }) {
   const { user, tenantId } = await assertAdmin();
+  const current = await prisma.tenant.findUniqueOrThrow({ where: { id: tenantId }, select: { address: true } });
+  const addressChanged = (params.address || null) !== current.address;
+
+  // Best-effort geocoding (section 3): never blocks saving the address
+  // itself if GOOGLE_MAPS_API_KEY is unset or the request fails.
+  const geocoded = addressChanged && params.address ? await geocodeAddress(params.address) : null;
+
   await prisma.tenant.update({
     where: { id: tenantId },
     data: {
@@ -362,8 +370,16 @@ export async function updateTenantProfile(params: { name: string; vatNumber?: st
       pec: params.pec || null,
       sdiCode: params.sdiCode || null,
       address: params.address || null,
+      ...(addressChanged
+        ? {
+            latitude: geocoded?.latitude ?? null,
+            longitude: geocoded?.longitude ?? null,
+            placeId: geocoded?.placeId ?? null,
+          }
+        : {}),
     },
   });
-  await logAudit({ tenantId, actorId: user.id, action: "tenant_profile_updated", entityType: "tenant", entityId: tenantId });
+  await logAudit({ tenantId, actorId: user.id, action: "tenant_profile_updated", entityType: "tenant", entityId: tenantId, metadata: { geocoded: Boolean(geocoded) } });
   revalidatePath("/admin/impostazioni");
+  revalidatePath("/");
 }
