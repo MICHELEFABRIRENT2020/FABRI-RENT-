@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { updateVehicleDetails } from "@/lib/actions/admin-actions";
+import { BrandModelPicker, type BrandModelResult } from "@/components/admin/brand-model-picker";
 import type { VehicleOwnershipType } from "@/generated/prisma/client";
 
 const OWNERSHIP_LABEL: Record<VehicleOwnershipType, string> = {
@@ -30,6 +31,8 @@ export type VehicleEditDto = {
   name: string;
   brand: string;
   model: string;
+  brandId: string | null;
+  vehicleModelId: string | null;
   category: string;
   dailyRate: string;
   seats: string;
@@ -65,6 +68,8 @@ export function VehicleEditForm({ vehicle }: { vehicle: VehicleEditDto }) {
           name: values.name,
           brand: values.brand || undefined,
           model: values.model || undefined,
+          brandId: values.brandId ?? undefined,
+          vehicleModelId: values.vehicleModelId ?? undefined,
           category: values.category,
           dailyRate: Number(values.dailyRate),
           seats: values.seats ? Number(values.seats) : undefined,
@@ -96,9 +101,22 @@ export function VehicleEditForm({ vehicle }: { vehicle: VehicleEditDto }) {
         <CardTitle className="text-base">Dati veicolo</CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
+        <BrandModelPicker
+          onSelect={(r: BrandModelResult) => {
+            setValues((v) => ({ ...v, brand: r.brandName, model: r.modelName, brandId: r.brandId, vehicleModelId: r.modelId }));
+          }}
+        />
         <div className="grid gap-4 sm:grid-cols-4">
-          <Field label="Marca" value={values.brand} onChange={(v) => set("brand", v)} />
-          <Field label="Modello" value={values.model} onChange={(v) => set("model", v)} />
+          <Field
+            label="Marca"
+            value={values.brand}
+            onChange={(v) => setValues((s) => ({ ...s, brand: v, brandId: null, vehicleModelId: null }))}
+          />
+          <Field
+            label="Modello"
+            value={values.model}
+            onChange={(v) => setValues((s) => ({ ...s, model: v, vehicleModelId: null }))}
+          />
           <Field label="Nome completo" value={values.name} onChange={(v) => set("name", v)} className="sm:col-span-2" />
           <Field label="Categoria" value={values.category} onChange={(v) => set("category", v)} />
           <Field label="Tariffa/giorno (EUR)" type="number" value={values.dailyRate} onChange={(v) => set("dailyRate", v)} />

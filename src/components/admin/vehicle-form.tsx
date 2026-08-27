@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { createVehicle } from "@/lib/actions/admin-actions";
+import { BrandModelPicker, type BrandModelResult } from "@/components/admin/brand-model-picker";
 
 export function VehicleForm() {
   const router = useRouter();
@@ -15,6 +16,8 @@ export function VehicleForm() {
   const [name, setName] = useState("");
   const [brand, setBrand] = useState("");
   const [model, setModel] = useState("");
+  const [brandId, setBrandId] = useState<string | undefined>();
+  const [vehicleModelId, setVehicleModelId] = useState<string | undefined>();
   const [category, setCategory] = useState("");
   const [dailyRate, setDailyRate] = useState("");
   const [seats, setSeats] = useState("");
@@ -35,6 +38,8 @@ export function VehicleForm() {
           name,
           brand: brand || undefined,
           model: model || undefined,
+          brandId,
+          vehicleModelId,
           category,
           dailyRate: Number(dailyRate),
           seats: seats ? Number(seats) : undefined,
@@ -48,6 +53,8 @@ export function VehicleForm() {
         setName("");
         setBrand("");
         setModel("");
+        setBrandId(undefined);
+        setVehicleModelId(undefined);
         setPlate("");
         setChassisNumber("");
         setYear("");
@@ -64,14 +71,40 @@ export function VehicleForm() {
         <CardTitle className="text-base">Aggiungi veicolo</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        <BrandModelPicker
+          onSelect={(r: BrandModelResult) => {
+            setBrand(r.brandName);
+            setModel(r.modelName);
+            setBrandId(r.brandId);
+            setVehicleModelId(r.modelId);
+            if (r.category && !category) setCategory(r.category);
+          }}
+        />
         <div className="grid gap-4 sm:grid-cols-4">
           <div className="space-y-2">
             <Label htmlFor="v-brand">Marca</Label>
-            <Input id="v-brand" value={brand} onChange={(e) => setBrand(e.target.value)} placeholder="Fiat" />
+            <Input
+              id="v-brand"
+              value={brand}
+              onChange={(e) => {
+                setBrand(e.target.value);
+                setBrandId(undefined);
+                setVehicleModelId(undefined);
+              }}
+              placeholder="Fiat"
+            />
           </div>
           <div className="space-y-2">
             <Label htmlFor="v-model">Modello</Label>
-            <Input id="v-model" value={model} onChange={(e) => setModel(e.target.value)} placeholder="Panda" />
+            <Input
+              id="v-model"
+              value={model}
+              onChange={(e) => {
+                setModel(e.target.value);
+                setVehicleModelId(undefined);
+              }}
+              placeholder="Panda"
+            />
           </div>
           <div className="space-y-2 sm:col-span-2">
             <Label htmlFor="v-name">Nome completo (o simile)</Label>

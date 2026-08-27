@@ -97,6 +97,8 @@ export async function createVehicle(params: {
   name: string;
   brand?: string;
   model?: string;
+  brandId?: string;
+  vehicleModelId?: string;
   category: string;
   dailyRate: number;
   seats?: number;
@@ -117,6 +119,8 @@ export async function createVehicle(params: {
       name: params.name,
       brand: params.brand,
       model: params.model,
+      brandId: params.brandId || undefined,
+      vehicleModelId: params.vehicleModelId || undefined,
       category: params.category,
       dailyRate: params.dailyRate,
       seats: params.seats,
@@ -164,6 +168,8 @@ export async function updateVehicleDetails(params: {
   name: string;
   brand?: string;
   model?: string;
+  brandId?: string;
+  vehicleModelId?: string;
   category: string;
   dailyRate: number;
   seats?: number;
@@ -188,6 +194,8 @@ export async function updateVehicleDetails(params: {
       name: params.name,
       brand: params.brand,
       model: params.model,
+      brandId: params.brandId || null,
+      vehicleModelId: params.vehicleModelId || null,
       category: params.category,
       dailyRate: params.dailyRate,
       seats: params.seats,

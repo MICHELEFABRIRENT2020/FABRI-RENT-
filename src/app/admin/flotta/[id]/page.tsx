@@ -32,6 +32,8 @@ export default async function VehicleDetailPage({ params }: { params: Promise<{ 
           name: vehicle.name,
           brand: vehicle.brand ?? "",
           model: vehicle.model ?? "",
+          brandId: vehicle.brandId,
+          vehicleModelId: vehicle.vehicleModelId,
           category: vehicle.category,
           dailyRate: vehicle.dailyRate.toString(),
           seats: vehicle.seats?.toString() ?? "",

@@ -10,6 +10,7 @@
     "postinstall": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:seed": "tsx prisma/seed.ts",
+    "db:seed-catalog": "tsx prisma/seed-vehicle-catalog.ts",
     "db:studio": "prisma studio"
   },
   "dependencies": {
