@@ -13,6 +13,7 @@ const NAV = [
   { href: "/admin/utenti", label: "Utenti" },
   { href: "/admin/impostazioni", label: "Impostazioni Contratto" },
   { href: "/admin/report", label: "Report" },
+  { href: "/admin/commercialista", label: "Commercialista Virtuale" },
 ];
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
