@@ -13,7 +13,6 @@ import { InsuranceSelector, type InsuranceOptionDto } from "@/components/booking
 import { ExtrasSelector, type ExtraSelection } from "@/components/booking/extras-selector";
 import { DocumentUploader, type DocumentSlotKey } from "@/components/booking/document-uploader";
 import { InvoiceForm, type InvoiceFormValues } from "@/components/booking/invoice-form";
-import { PaymentForm } from "@/components/booking/payment-form";
 import { useExtraServices, computeExtrasTotalPreview } from "@/lib/hooks/use-extra-services";
 import { formatItalianDate } from "@/lib/rental-time";
 import { isKasko } from "@/lib/insurance-zone";
@@ -54,7 +53,7 @@ export function RentCheckoutWizard({
   const [paymentMethod, setPaymentMethod] = useState<"credit_card" | "debit_card">("credit_card");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [booking, setBooking] = useState<{ bookingId: string; clientSecret: string } | null>(null);
+  const [booking, setBooking] = useState<{ bookingId: string } | null>(null);
 
   const insurancePreview = insurance ? Number(insurance.dailyCost) * days : 0;
   const extrasPreview = useMemo(() => computeExtrasTotalPreview(extras, extraSelection, days), [extras, extraSelection, days]);
@@ -84,7 +83,9 @@ export function RentCheckoutWizard({
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Errore nella creazione della prenotazione");
-      setBooking({ bookingId: data.bookingId, clientSecret: data.clientSecret });
+      setBooking({ bookingId: data.bookingId });
+      toast.success("Prenotazione confermata!");
+      router.push(`/prenotazioni/${data.bookingId}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Errore imprevisto");
     } finally {
@@ -96,16 +97,12 @@ export function RentCheckoutWizard({
     return (
       <Card className="mx-auto max-w-lg">
         <CardHeader>
-          <CardTitle>Completa il pagamento</CardTitle>
+          <CardTitle>Prenotazione confermata</CardTitle>
         </CardHeader>
         <CardContent>
-          <PaymentForm
-            clientSecret={booking.clientSecret}
-            onSuccess={() => {
-              toast.success("Prenotazione confermata!");
-              router.push(`/prenotazioni/${booking.bookingId}`);
-            }}
-          />
+          <p className="text-sm text-muted-foreground">
+            Il pagamento verra&apos; effettuato al ritiro del veicolo. Ti stiamo reindirizzando alla tua prenotazione...
+          </p>
         </CardContent>
       </Card>
     );
@@ -176,8 +173,8 @@ export function RentCheckoutWizard({
                 </RadioGroup>
                 <p className="text-sm text-muted-foreground">
                   {insurance && isKasko(insurance.tier)
-                    ? "Verra' effettuato un addebito diretto immediato (KASKO Senza Cauzione)."
-                    : "Verra' effettuata una pre-autorizzazione della cauzione, oltre all'addebito del noleggio."}
+                    ? "Nessuna cauzione richiesta (KASKO Senza Cauzione) - pagherai al ritiro del veicolo."
+                    : "La cauzione e il noleggio verranno saldati al ritiro del veicolo, presso la nostra sede."}
                 </p>
               </div>
             )}

@@ -5,12 +5,6 @@ import { computeVehiclePrice, computeParkingPrice, computeInsurancePrice, comput
 import { assignVehicleForBooking } from "@/lib/fleet-engine";
 import { checkParkingAvailability } from "@/lib/parking-engine";
 import { assertInsuranceSelectable, isKasko } from "@/lib/insurance";
-import {
-  createRentalWithDepositIntent,
-  createKaskoDirectCharge,
-  createRentalChargeIntent,
-  toStripeAmount,
-} from "@/lib/stripe";
 import type { CreateBookingInput } from "@/lib/validation/booking";
 import type { DocumentType, Prisma } from "@/generated/prisma/client";
 
@@ -76,11 +70,11 @@ async function nextContractNumber(tenantId: string): Promise<number> {
 }
 
 /**
- * Every Stripe PaymentIntent is created BEFORE any booking row is persisted,
- * using a pre-generated booking id. This way a Stripe failure never leaves
- * an orphaned, unpayable booking behind - only the (idempotent) customer
- * upsert happens first. The booking + extras + document audits + payment
- * row(s) are then written atomically in a single transaction.
+ * No payment gateway is called here: the booking is created directly with
+ * `paymentStatus: "pending"` (schema default), mirroring the desk walk-in
+ * flow (src/lib/actions/desk-booking-actions.ts). Payment is recorded
+ * afterwards - on pickup, via src/lib/actions/payment-actions.ts - whatever
+ * the customer actually pays with (cash/POS/SumUp/bonifico).
  */
 export async function createBooking(tenantId: string, input: CreateBookingInput) {
   const startDate = new Date(input.startDate);
@@ -133,7 +127,7 @@ export async function createBooking(tenantId: string, input: CreateBookingInput)
       totalPrice,
       depositAmount,
       hasDeposit: !kasko,
-      paymentMethod: input.paymentMethod === "credit_card" || input.paymentMethod === "debit_card" ? "stripe" : undefined,
+      status: "confirmed",
       extras: {
         create: extrasResult.lines.map((l) => ({
           extraServiceId: l.extraServiceId,
@@ -143,43 +137,12 @@ export async function createBooking(tenantId: string, input: CreateBookingInput)
       },
     };
 
-    let clientSecret: string | null;
-    let paymentRows: Prisma.PaymentCreateManyInput[];
-
-    if (kasko) {
-      const intent = await createKaskoDirectCharge({
-        amountEuroCents: toStripeAmount(totalPrice),
-        bookingId,
-        customerEmail: customerUser.email,
-      });
-      clientSecret = intent.client_secret;
-      paymentRows = [
-        { tenantId, bookingId, type: "kasko_charge", method: "stripe", amount: totalPrice, captureMethod: "automatic", stripePaymentIntentId: intent.id },
-      ];
-    } else {
-      // Single PaymentIntent authorizes rental + deposit together (manual
-      // capture). The webhook captures the rental portion immediately on
-      // authorization and leaves the deposit portion held until check-out.
-      const combinedIntent = await createRentalWithDepositIntent({
-        rentalAmountEuroCents: toStripeAmount(totalPrice),
-        depositAmountEuroCents: toStripeAmount(depositAmount),
-        bookingId,
-        customerEmail: customerUser.email,
-      });
-      clientSecret = combinedIntent.client_secret;
-      paymentRows = [
-        { tenantId, bookingId, type: "rental_charge", method: "stripe", amount: totalPrice, captureMethod: "manual", stripePaymentIntentId: combinedIntent.id },
-        { tenantId, bookingId, type: "deposit_authorization", method: "stripe", amount: depositAmount, captureMethod: "manual", stripePaymentIntentId: combinedIntent.id },
-      ];
-    }
-
     const [booking] = await prisma.$transaction([
       prisma.booking.create({ data: bookingData }),
       prisma.documentAudit.createMany({ data: documentAuditRows(tenantId, customerUser.id, bookingId, input.customer) }),
-      prisma.payment.createMany({ data: paymentRows }),
     ]);
 
-    return { booking, clientSecret };
+    return { booking };
   }
 
   // Parking (Parking Go)
@@ -204,12 +167,6 @@ export async function createBooking(tenantId: string, input: CreateBookingInput)
   });
   const totalPrice = Number((basePrice + extrasResult.total).toFixed(2));
 
-  const intent = await createRentalChargeIntent({
-    amountEuroCents: toStripeAmount(totalPrice),
-    bookingId,
-    customerEmail: customerUser.email,
-  });
-
   const bookingData: Prisma.BookingCreateInput = {
     id: bookingId,
     tenant: { connect: { id: tenantId } },
@@ -226,7 +183,7 @@ export async function createBooking(tenantId: string, input: CreateBookingInput)
     totalPrice,
     depositAmount: 0,
     hasDeposit: false,
-    paymentMethod: "stripe",
+    status: "confirmed",
     extras: {
       create: extrasResult.lines.map((l) => ({
         extraServiceId: l.extraServiceId,
@@ -239,10 +196,7 @@ export async function createBooking(tenantId: string, input: CreateBookingInput)
   const [booking] = await prisma.$transaction([
     prisma.booking.create({ data: bookingData }),
     prisma.documentAudit.createMany({ data: documentAuditRows(tenantId, customerUser.id, bookingId, input.customer) }),
-    prisma.payment.create({
-      data: { tenantId, bookingId, type: "rental_charge", method: "stripe", amount: totalPrice, captureMethod: "automatic", stripePaymentIntentId: intent.id },
-    }),
   ]);
 
-  return { booking, clientSecret: intent.client_secret };
+  return { booking };
 }

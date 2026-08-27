@@ -49,10 +49,7 @@ valutare di riabilitare il parallelismo.
 - Nessun test per i moduli Officina/Danni/Sinistri/Multe/Blacklist/
   Documenti/Cassa (verificati manualmente durante lo sviluppo, mai con un
   test automatico committato).
-- Nessun test per l'integrazione Stripe reale (richiede chiavi test/live;
-  il flusso di creazione booking pubblico e' verificabile solo fino al
-  boundary dell'API Stripe senza credenziali).
-- Nessun test per SumUp reale (idem - richiede
+- Nessun test per SumUp reale (richiede
   `SUMUP_CLIENT_ID`/`SUMUP_CLIENT_SECRET`/`SUMUP_MERCHANT_CODE` per un
   account sandbox reale; il client HTTP e' testabile solo mockando
   `fetch`, cosa non ancora fatta).
@@ -68,6 +65,6 @@ bloccante - vedi `SECURITY.md`). Nessun GitHub Secret e' necessario per
 far girare la CI: `DATABASE_URL`/`AUTH_SECRET`/`NEXTAUTH_URL` nel workflow
 sono valori fittizi validi solo per il servizio Postgres effimero della
 pipeline, non credenziali reali. I secret elencati in `.env.example`
-(Stripe, SumUp, Google Maps, ecc.) servono solo per il *deploy*, mai per
+(SumUp, Google Maps, ecc.) servono solo per il *deploy*, mai per
 la CI, perche' ogni integrazione degrada onestamente quando la chiave
 manca invece di fallire la build.

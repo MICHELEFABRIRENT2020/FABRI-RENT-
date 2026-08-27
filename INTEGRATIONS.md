@@ -9,13 +9,6 @@ blocca build, avvio o le funzionalita' che non dipendono da essa.
 
 ## Reali, verificate contro documentazione ufficiale
 
-### Stripe (`src/lib/stripe.ts`)
-Pagamenti del portale pubblico: PaymentIntent combinata noleggio+cauzione
-(cattura manuale), addebito diretto KASKO, webhook di conferma.
-**Stato: gia' presente prima di questa sessione, non modificato.**
-ENV: `STRIPE_SECRET_KEY`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`,
-`STRIPE_WEBHOOK_SECRET`.
-
 ### SumUp (`src/lib/sumup.ts`)
 OAuth2 client_credentials, Checkouts API (`POST/GET /v0.1/checkouts`).
 Endpoint, campi richiesta/risposta e comportamento del webhook verificati

@@ -8,7 +8,7 @@ commerciale per piu' clienti (tenant), ciascuno con le proprie sedi, utenti,
 flotta e dati, completamente isolati.
 
 Stack: **Next.js 16 (App Router, Turbopack) + TypeScript + Tailwind CSS v4 +
-shadcn/ui + PostgreSQL 16 + Prisma 6 + NextAuth v5 (con 2FA TOTP) + Stripe +
+shadcn/ui + PostgreSQL 16 + Prisma 6 + NextAuth v5 (con 2FA TOTP) +
 SumUp**. PWA installabile + shell nativa Capacitor (iOS/Android).
 
 ## Documentazione
@@ -53,9 +53,9 @@ actions e API route.
 ## Mappa dei moduli
 
 **Portale pubblico** (`/`, `/prenota/*`) - prenotazione noleggio/parcheggio,
-motore assicurativo, upload documenti, pagamento Stripe (cauzione + noleggio
-in un'unica PaymentIntent a cattura manuale), card "Come raggiungerci" con
-geolocalizzazione browser e link Google Maps.
+motore assicurativo, upload documenti, pagamento (cauzione + noleggio)
+saldato al ritiro/ingresso, card "Come raggiungerci" con geolocalizzazione
+browser e link Google Maps.
 
 **Back-office Desk** (`/desk/*`, ruoli operativi):
 
@@ -148,7 +148,7 @@ curl http://localhost:3000/api/health
 ## Integrazioni esterne
 
 Vedi [INTEGRATIONS.md](./INTEGRATIONS.md) per lo stato dettagliato di
-ognuna (Stripe, SumUp, Google Maps, geolocalizzazione, Assistente AI,
+ognuna (SumUp, Google Maps, geolocalizzazione, Assistente AI,
 OTP SMS, email, OCR/AI Vision, fatturazione elettronica SDI, lookup
 targa). Filosofia comune: interfaccia e livello di servizio sempre
 completi; senza credenziale, un esito onesto "non configurato" - mai un
@@ -190,7 +190,7 @@ per il dettaglio completo):
 - Suite di test per Officina/Danni/Sinistri/Multe/Blacklist/Documenti/
   Cassa (verificati manualmente durante lo sviluppo, non con test
   automatici committati - vedi TESTING.md)
-- Test automatizzati per le chiamate reali a Stripe/SumUp (nessuna
+- Test automatizzati per le chiamate reali a SumUp (nessuna
   credenziale sandbox disponibile in questa sessione)
 - 2FA per l'assistente AI o l'accesso M2M (l'assistente e' gia' in sola
   lettura per design, non serve una conferma aggiuntiva)
@@ -231,7 +231,7 @@ Logica di business in `src/lib/`:
 - `rental-time.ts` / `pricing-engine.ts` / `insurance*.ts` /
   `fleet-engine.ts` / `parking-engine.ts` - motori di dominio (slot, tariffe
   dinamiche, assicurazione, assegnazione "o simile", capienza parcheggio)
-- `stripe.ts` / `sumup.ts` - pagamenti
+- `sumup.ts` - pagamenti (desk)
 - `plate-lookup.ts` - lookup targa (provider-based)
 - `maps.ts` / `geo.ts` - geocoding, distanza, link direzioni
 - `ai-assistant.ts` - Assistente AI (tool layer)

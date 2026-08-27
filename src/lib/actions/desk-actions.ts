@@ -8,7 +8,6 @@ import { computeOverrunPenaltyDays } from "@/lib/rental-time";
 import { verifyOtp, generateOtp, sendOtpSms } from "@/lib/otp-provider";
 import { sendEmail } from "@/lib/email-provider";
 import { generateDamageReportPdf, generateDamageTicketPdf } from "@/lib/pdf";
-import { captureRemaining, cancelRemaining, toStripeAmount } from "@/lib/stripe";
 import { resolveExtensionRequest } from "@/lib/fleet-engine";
 import type { AppUserRole } from "@/types/next-auth";
 import type { DocumentAuditStatus, CheckInMethod } from "@/generated/prisma/client";
@@ -173,17 +172,19 @@ export async function checkOutBooking(params: {
   const damageWithheld = Math.max(0, params.damageWithheldAmount ?? 0);
   const totalWithheld = Math.min(penaltyAmount + damageWithheld, Number(booking.depositAmount));
 
+  // Deposits are collected/held physically at the desk (cash, SumUp, or a
+  // pre-authorized card slip) rather than via an automated payment gateway
+  // hold - so releasing or withholding the deposit here is a bookkeeping
+  // update only, not an external capture/cancel call.
   const depositPayment = booking.payments.find((p) => p.type === "deposit_authorization");
 
-  if (booking.hasDeposit && depositPayment?.stripePaymentIntentId) {
+  if (booking.hasDeposit && depositPayment) {
     if (totalWithheld > 0) {
-      await captureRemaining(depositPayment.stripePaymentIntentId, toStripeAmount(totalWithheld));
       await prisma.payment.update({
         where: { id: depositPayment.id },
         data: { status: "captured", capturedAt: new Date(), amount: totalWithheld },
       });
     } else {
-      await cancelRemaining(depositPayment.stripePaymentIntentId);
       await prisma.payment.update({
         where: { id: depositPayment.id },
         data: { status: "canceled", canceledAt: new Date() },

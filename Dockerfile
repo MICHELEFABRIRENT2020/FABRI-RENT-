@@ -21,9 +21,7 @@ COPY . .
 # read at container runtime - docker-compose.yml's `environment:` block
 # alone would NOT apply them. Pass as build args (see docker-compose.yml
 # `build.args` / `docker build --build-arg`).
-ARG NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
 ARG NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
-ENV NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=$NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
 ENV NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=$NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
 
 RUN npx prisma generate

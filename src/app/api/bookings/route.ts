@@ -21,13 +21,12 @@ export async function POST(req: NextRequest) {
 
   try {
     const tenant = await getPublicTenant();
-    const { booking, clientSecret } = await createBooking(tenant.id, parsed.data);
+    const { booking } = await createBooking(tenant.id, parsed.data);
     return NextResponse.json(
       {
         bookingId: booking.id,
         totalPrice: booking.totalPrice,
         depositAmount: booking.depositAmount,
-        clientSecret,
       },
       { status: 201 }
     );

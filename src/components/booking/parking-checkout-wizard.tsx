@@ -12,7 +12,6 @@ import { toast } from "sonner";
 import { ExtrasSelector, type ExtraSelection } from "@/components/booking/extras-selector";
 import { DocumentUploader, type DocumentSlotKey } from "@/components/booking/document-uploader";
 import { InvoiceForm, type InvoiceFormValues } from "@/components/booking/invoice-form";
-import { PaymentForm } from "@/components/booking/payment-form";
 import { useExtraServices, computeExtrasTotalPreview } from "@/lib/hooks/use-extra-services";
 import { formatItalianDate } from "@/lib/rental-time";
 import type { ParkingCategory, ParkingSlotType } from "@/generated/prisma/client";
@@ -57,7 +56,7 @@ export function ParkingCheckoutWizard({
   const [paymentMethod, setPaymentMethod] = useState<"credit_card" | "debit_card">("credit_card");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [booking, setBooking] = useState<{ bookingId: string; clientSecret: string } | null>(null);
+  const [booking, setBooking] = useState<{ bookingId: string } | null>(null);
 
   const extrasPreview = useMemo(() => computeExtrasTotalPreview(extras, extraSelection, days), [extras, extraSelection, days]);
   const totalPreview = basePrice + extrasPreview;
@@ -83,7 +82,9 @@ export function ParkingCheckoutWizard({
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Errore nella creazione della prenotazione");
-      setBooking({ bookingId: data.bookingId, clientSecret: data.clientSecret });
+      setBooking({ bookingId: data.bookingId });
+      toast.success("Prenotazione confermata!");
+      router.push(`/prenotazioni/${data.bookingId}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Errore imprevisto");
     } finally {
@@ -95,16 +96,12 @@ export function ParkingCheckoutWizard({
     return (
       <Card className="mx-auto max-w-lg">
         <CardHeader>
-          <CardTitle>Completa il pagamento</CardTitle>
+          <CardTitle>Prenotazione confermata</CardTitle>
         </CardHeader>
         <CardContent>
-          <PaymentForm
-            clientSecret={booking.clientSecret}
-            onSuccess={() => {
-              toast.success("Prenotazione confermata!");
-              router.push(`/prenotazioni/${booking.bookingId}`);
-            }}
-          />
+          <p className="text-sm text-muted-foreground">
+            Il pagamento verra&apos; effettuato all&apos;ingresso. Ti stiamo reindirizzando alla tua prenotazione...
+          </p>
         </CardContent>
       </Card>
     );

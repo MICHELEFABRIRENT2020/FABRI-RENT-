@@ -45,16 +45,15 @@ avviso se usato con l'output standalone.
 
 ## Variabili `NEXT_PUBLIC_*` (attenzione: servono al build, non solo al runtime)
 
-Next.js inserisce le variabili `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` e
-`NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` direttamente nel bundle client durante
-`next build` - impostarle solo nell'`environment:` del container a runtime
-(come tutte le altre) **non ha alcun effetto**, perche' il bundle e' gia'
-stato compilato senza di loro. `docker-compose.yml` le passa come
-`build.args` proprio per questo; se costruisci l'immagine a mano, usa:
+Next.js inserisce la variabile `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`
+direttamente nel bundle client durante `next build` - impostarla solo
+nell'`environment:` del container a runtime **non ha alcun effetto**,
+perche' il bundle e' gia' stato compilato senza di essa. `docker-compose.yml`
+la passa come `build.args` proprio per questo; se costruisci l'immagine a
+mano, usa:
 
 ```bash
 docker build \
-  --build-arg NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY="pk_live_..." \
   --build-arg NEXT_PUBLIC_GOOGLE_MAPS_API_KEY="AIza..." \
   -t fabrigroup-rent-manager .
 ```
@@ -71,7 +70,7 @@ avviare (l'app funziona, con le integrazioni esterne in modalita'
 - `NEXTAUTH_URL` (deve combaciare col dominio pubblico reale in
   produzione)
 
-Tutte le altre (Stripe, SumUp, Google Maps, AI Vision/OCR, Aruba SDI,
+Tutte le altre (SumUp, Google Maps, AI Vision/OCR, Aruba SDI,
 lookup targa, Anthropic/AI Assistant, SMS/email) sono opzionali: senza
 valore, la relativa funzionalita' degrada onestamente invece di fallire
 la build o l'avvio - vedi INTEGRATIONS.md per il dettaglio di ognuna.

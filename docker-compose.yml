@@ -23,7 +23,6 @@ services:
       # environment - Next.js inlines them into the client bundle at
       # `next build` time. See Dockerfile.
       args:
-        NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: "${NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY:-}"
         NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: "${NEXT_PUBLIC_GOOGLE_MAPS_API_KEY:-}"
     restart: unless-stopped
     depends_on:
@@ -35,9 +34,6 @@ services:
       DATABASE_URL: "postgresql://fabrirent:fabrirent_dev@db:5432/fabrirent?schema=public"
       AUTH_SECRET: "${AUTH_SECRET:?set AUTH_SECRET in .env - generate with: openssl rand -base64 32}"
       NEXTAUTH_URL: "${NEXTAUTH_URL:-http://localhost:3000}"
-      STRIPE_SECRET_KEY: "${STRIPE_SECRET_KEY:-}"
-      NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: "${NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY:-}"
-      STRIPE_WEBHOOK_SECRET: "${STRIPE_WEBHOOK_SECRET:-}"
       SMS_PROVIDER_API_KEY: "${SMS_PROVIDER_API_KEY:-}"
       EMAIL_PROVIDER_API_KEY: "${EMAIL_PROVIDER_API_KEY:-}"
       AI_VISION_API_KEY: "${AI_VISION_API_KEY:-}"

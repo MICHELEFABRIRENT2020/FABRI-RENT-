@@ -50,7 +50,7 @@ Le uniche route `route.ts` che accettano `POST` sono:
 | --- | --- | --- |
 | `/api/bookings` | Nessuna (form pubblico) | Nessun privilegio di sessione da forgiare; mitigato con rate limiting |
 | `/api/upload`, `/api/ocr/scan` | Nessuna/opzionale | Idem, piu' validazione magic-byte e rate limiting |
-| `/api/stripe/webhook`, `/api/sumup/webhook` | Firma/verifica lato provider, non cookie | CSRF non applicabile (non usa la sessione browser) |
+| `/api/sumup/webhook` | Firma/verifica lato provider, non cookie | CSRF non applicabile (non usa la sessione browser) |
 
 Nessuna route mutante autenticata via cookie esiste al di fuori delle
 Server Actions - non serve un token CSRF aggiuntivo (che sarebbe ridondante
