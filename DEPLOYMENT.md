@@ -43,6 +43,22 @@ produzione (piu' leggero, non richiede l'intero `node_modules`). `npm run
 start` (`next start`) funziona solo in sviluppo/test locale e stampa un
 avviso se usato con l'output standalone.
 
+## Variabili `NEXT_PUBLIC_*` (attenzione: servono al build, non solo al runtime)
+
+Next.js inserisce le variabili `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` e
+`NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` direttamente nel bundle client durante
+`next build` - impostarle solo nell'`environment:` del container a runtime
+(come tutte le altre) **non ha alcun effetto**, perche' il bundle e' gia'
+stato compilato senza di loro. `docker-compose.yml` le passa come
+`build.args` proprio per questo; se costruisci l'immagine a mano, usa:
+
+```bash
+docker build \
+  --build-arg NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY="pk_live_..." \
+  --build-arg NEXT_PUBLIC_GOOGLE_MAPS_API_KEY="AIza..." \
+  -t fabrigroup-rent-manager .
+```
+
 ## Variabili d'ambiente richieste
 
 Vedi `.env.example` per l'elenco completo con commenti. Minime per
