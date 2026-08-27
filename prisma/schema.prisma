@@ -380,6 +380,7 @@ model Tenant {
   documents             Document[]
   expenses              Expense[]
   notifications         Notification[]
+  aiInteractionLogs     AiInteractionLog[]
 
   @@map("tenants")
 }
@@ -390,6 +391,12 @@ model Location {
   name      String
   address   String?
   isPrimary Boolean @default(false) @map("is_primary")
+
+  // Google Geocoding (section 3) - popolati alla scrittura dell'indirizzo
+  // tramite src/lib/maps.ts; null finche' GOOGLE_MAPS_API_KEY non e' configurata.
+  latitude  Decimal? @db.Decimal(9, 6)
+  longitude Decimal? @db.Decimal(9, 6)
+  placeId   String?  @map("place_id")
 
   createdAt DateTime @default(now()) @map("created_at")
 
@@ -430,6 +437,16 @@ model User {
   sdiCode             String?  @map("sdi_code") // Codice Univoco SDI
   pec                 String?
 
+  // Auth hardening: brute-force lockout (section: sicurezza)
+  failedLoginAttempts Int       @default(0) @map("failed_login_attempts")
+  lockedUntil         DateTime? @map("locked_until")
+  lastLoginAt         DateTime? @map("last_login_at")
+
+  // 2FA (TOTP)
+  twoFactorEnabled      Boolean  @default(false) @map("two_factor_enabled")
+  twoFactorSecret        String? @map("two_factor_secret") // encrypted at rest, see src/lib/crypto-secret.ts
+  twoFactorBackupCodes  String[] @map("two_factor_backup_codes") // bcrypt hashes, single-use
+
   createdAt           DateTime @default(now()) @map("created_at")
   updatedAt           DateTime @updatedAt @map("updated_at")
 
@@ -449,6 +466,7 @@ model User {
   fines               Fine[]
   documents           Document[]
   expenses            Expense[]
+  aiInteractionLogs   AiInteractionLog[]
 
   @@index([tenantId])
   @@map("users")
@@ -464,8 +482,10 @@ model Vehicle {
   locationId     String?       @map("location_id")
 
   name           String // es. "Fiat Panda 1.0 Hybrid"
-  brand          String? // Marca
-  model          String? // Modello
+  brand          String? // Marca (snapshot testuale, mostrato in tutta l'app)
+  model          String? // Modello (snapshot testuale)
+  brandId        String?       @map("brand_id") // FK opzionale al database globale marche/modelli
+  vehicleModelId String?       @map("vehicle_model_id")
   category       String // es. "City Car" - matching group used for "o simile" assignment
   isOrSimilar    Boolean       @default(true) @map("is_or_similar")
   dailyRate      Decimal       @db.Decimal(10, 2) @map("daily_rate")
@@ -501,6 +521,8 @@ model Vehicle {
 
   tenant         Tenant        @relation(fields: [tenantId], references: [id])
   location       Location?     @relation(fields: [locationId], references: [id])
+  brandRef       VehicleBrand? @relation(fields: [brandId], references: [id])
+  modelRef       VehicleModel? @relation(fields: [vehicleModelId], references: [id])
 
   bookings       Booking[]
   insurancePolicies VehicleInsurancePolicy[]
@@ -511,7 +533,46 @@ model Vehicle {
 
   @@unique([tenantId, plate])
   @@index([tenantId])
+  @@index([brandId])
+  @@index([vehicleModelId])
   @@map("vehicles")
+}
+
+// ---------------------------------------------------------------------------
+// Global vehicle make/model catalog (section 7) - tenant-independent lookup
+// data used to populate fleet forms with a searchable combobox instead of
+// free text. Vehicle.brand/model stay as editable text snapshots so a
+// tenant can still register a vehicle that isn't in the catalog yet.
+// ---------------------------------------------------------------------------
+
+model VehicleBrand {
+  id        String  @id @default(uuid())
+  name      String  @unique
+  slug      String  @unique
+  logoUrl   String? @map("logo_url")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  models    VehicleModel[]
+  vehicles  Vehicle[]
+
+  @@map("vehicle_brands")
+}
+
+model VehicleModel {
+  id        String   @id @default(uuid())
+  brandId   String   @map("brand_id")
+  name      String
+  category  String? // suggerimento categoria "o simile" (City Car, SUV, ...)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  brand     VehicleBrand @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  vehicles  Vehicle[]
+
+  @@unique([brandId, name])
+  @@index([brandId])
+  @@map("vehicle_models")
 }
 
 // ---------------------------------------------------------------------------
@@ -1113,7 +1174,11 @@ model Payment {
   // deposit hold into a single Stripe PaymentIntent (see booking-service.ts),
   // so two Payment rows can point at the same stripePaymentIntentId.
   stripePaymentIntentId String?       @map("stripe_payment_intent_id")
+  sumupCheckoutId       String?       @map("sumup_checkout_id")
+  sumupTransactionId    String?       @map("sumup_transaction_id")
   captureMethod         String        @default("automatic") @map("capture_method") // "manual" for deposit auth
+  failureReason         String?       @map("failure_reason")
+  idempotencyKey        String?       @unique @map("idempotency_key")
   createdAt             DateTime      @default(now()) @map("created_at")
   capturedAt            DateTime?     @map("captured_at")
   canceledAt            DateTime?     @map("canceled_at")
@@ -1123,6 +1188,7 @@ model Payment {
 
   @@index([tenantId])
   @@index([stripePaymentIntentId])
+  @@index([sumupCheckoutId])
   @@map("payments")
 }
 
@@ -1221,4 +1287,30 @@ model AuditLog {
 
   @@index([tenantId])
   @@map("audit_log")
+}
+
+// ---------------------------------------------------------------------------
+// AI Assistant interaction log (section AI Assistant) - every tool call the
+// assistant makes is recorded here for audit, cost control and rate
+// limiting, independently of AuditLog (which tracks human-driven writes).
+// ---------------------------------------------------------------------------
+
+model AiInteractionLog {
+  id            String   @id @default(uuid())
+  tenantId      String   @map("tenant_id")
+  actorId       String   @map("actor_id")
+  prompt        String // user message, truncated to a safe length before storage
+  toolsUsed     Json?    @map("tools_used") // [{name, input, resultSummary}]
+  responsePreview String? @map("response_preview")
+  model         String
+  inputTokens   Int?     @map("input_tokens")
+  outputTokens  Int?     @map("output_tokens")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  tenant        Tenant   @relation(fields: [tenantId], references: [id])
+  actor         User     @relation(fields: [actorId], references: [id])
+
+  @@index([tenantId])
+  @@index([actorId])
+  @@map("ai_interaction_log")
 }
