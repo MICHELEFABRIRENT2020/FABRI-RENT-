@@ -6,14 +6,36 @@ import { requireTenant } from "@/lib/session";
 
 export default async function AdminFleetPage() {
   const { tenantId } = await requireTenant();
-  const vehicles = await prisma.vehicle.findMany({ where: { tenantId }, orderBy: [{ category: "asc" }, { name: "asc" }] });
+  const vehicles = await prisma.vehicle.findMany({
+    where: { tenantId },
+    include: {
+      insurancePolicies: { orderBy: { periodEnd: "desc" }, take: 1 },
+      bookings: {
+        where: { status: { in: ["confirmed", "checked_in"] } },
+        orderBy: { startDate: "desc" },
+        take: 1,
+        include: { user: true },
+      },
+    },
+    orderBy: [{ category: "asc" }, { name: "asc" }],
+  });
+
   const dto = vehicles.map((v) => ({
     id: v.id,
     name: v.name,
+    brand: v.brand,
+    model: v.model,
     category: v.category,
-    dailyRate: v.dailyRate.toString(),
-    status: v.status,
+    fuelType: v.fuelType,
+    year: v.year,
     plate: v.plate,
+    chassisNumber: v.chassisNumber,
+    odometerKm: v.odometerKm,
+    assignedCustomer: v.bookings[0]?.user.fullName ?? null,
+    status: v.status,
+    insuranceExpiryDate: v.insurancePolicies[0]?.periodEnd.toISOString() ?? null,
+    bolloExpiryDate: v.bolloExpiryDate?.toISOString() ?? null,
+    revisioneExpiryDate: v.revisioneExpiryDate?.toISOString() ?? null,
   }));
 
   return (

@@ -1,9 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -11,17 +11,26 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { toast } from "sonner";
-import { updateVehicleStatus, deleteVehicle } from "@/lib/actions/admin-actions";
+import { ComplianceDate } from "@/components/admin/compliance-date";
+import { updateVehicleStatus } from "@/lib/actions/admin-actions";
 import type { VehicleStatus } from "@/generated/prisma/client";
 
 export type VehicleDto = {
   id: string;
   name: string;
+  brand: string | null;
+  model: string | null;
   category: string;
-  dailyRate: string;
-  status: VehicleStatus;
+  fuelType: string | null;
+  year: number | null;
   plate: string | null;
+  chassisNumber: string | null;
+  odometerKm: number | null;
+  assignedCustomer: string | null;
+  status: VehicleStatus;
+  insuranceExpiryDate: string | null;
+  bolloExpiryDate: string | null;
+  revisioneExpiryDate: string | null;
 };
 
 const STATUS_LABEL: Record<VehicleStatus, string> = {
@@ -38,73 +47,84 @@ export function VehicleTable({ vehicles }: { vehicles: VehicleDto[] }) {
   const [isPending, startTransition] = useTransition();
 
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Veicolo</TableHead>
-          <TableHead>Categoria</TableHead>
-          <TableHead>Targa</TableHead>
-          <TableHead>Tariffa/giorno</TableHead>
-          <TableHead>Stato</TableHead>
-          <TableHead />
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {vehicles.map((v) => (
-          <TableRow key={v.id}>
-            <TableCell>{v.name}</TableCell>
-            <TableCell>{v.category}</TableCell>
-            <TableCell>{v.plate ?? "-"}</TableCell>
-            <TableCell>EUR {Number(v.dailyRate).toFixed(2)}</TableCell>
-            <TableCell>
-              <Select
-                value={v.status}
-                disabled={isPending}
-                onValueChange={(status) =>
-                  startTransition(async () => {
-                    await updateVehicleStatus(v.id, status as VehicleStatus);
-                    router.refresh();
-                  })
-                }
-              >
-                <SelectTrigger className="w-44">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.entries(STATUS_LABEL).map(([value, label]) => (
-                    <SelectItem key={value} value={value}>
-                      {label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </TableCell>
-            <TableCell>
-              <Button
-                size="sm"
-                variant="ghost"
-                disabled={isPending}
-                onClick={() =>
-                  startTransition(async () => {
-                    await deleteVehicle(v.id);
-                    toast.success("Veicolo rimosso");
-                    router.refresh();
-                  })
-                }
-              >
-                Rimuovi
-              </Button>
-            </TableCell>
-          </TableRow>
-        ))}
-        {vehicles.length === 0 && (
+    <div className="overflow-x-auto">
+      <Table className="text-sm">
+        <TableHeader>
           <TableRow>
-            <TableCell colSpan={6} className="text-center text-muted-foreground">
-              Nessun veicolo in flotta.
-            </TableCell>
+            <TableHead>Marca</TableHead>
+            <TableHead>Modello</TableHead>
+            <TableHead>Categoria</TableHead>
+            <TableHead>Alimentazione</TableHead>
+            <TableHead>Anno</TableHead>
+            <TableHead>Targa</TableHead>
+            <TableHead>Telaio</TableHead>
+            <TableHead>Km</TableHead>
+            <TableHead>Cliente assegnato</TableHead>
+            <TableHead>Stato</TableHead>
+            <TableHead>Assicurazione</TableHead>
+            <TableHead>Bollo</TableHead>
+            <TableHead>Revisione</TableHead>
           </TableRow>
-        )}
-      </TableBody>
-    </Table>
+        </TableHeader>
+        <TableBody>
+          {vehicles.map((v) => (
+            <TableRow key={v.id}>
+              <TableCell className="whitespace-nowrap">{v.brand ?? "-"}</TableCell>
+              <TableCell className="whitespace-nowrap">
+                <Link href={`/admin/flotta/${v.id}`} className="font-medium text-primary hover:underline">
+                  {v.model ?? v.name}
+                </Link>
+              </TableCell>
+              <TableCell className="whitespace-nowrap">{v.category}</TableCell>
+              <TableCell className="whitespace-nowrap">{v.fuelType ?? "-"}</TableCell>
+              <TableCell>{v.year ?? "-"}</TableCell>
+              <TableCell className="whitespace-nowrap font-mono text-xs">{v.plate ?? "-"}</TableCell>
+              <TableCell className="whitespace-nowrap font-mono text-xs">{v.chassisNumber ?? "-"}</TableCell>
+              <TableCell className="whitespace-nowrap">{v.odometerKm ? `${v.odometerKm.toLocaleString("it-IT")} km` : "-"}</TableCell>
+              <TableCell className="whitespace-nowrap">{v.assignedCustomer ?? "-"}</TableCell>
+              <TableCell>
+                <Select
+                  value={v.status}
+                  disabled={isPending}
+                  onValueChange={(status) =>
+                    startTransition(async () => {
+                      await updateVehicleStatus(v.id, status as VehicleStatus);
+                      router.refresh();
+                    })
+                  }
+                >
+                  <SelectTrigger className="w-40">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(STATUS_LABEL).map(([value, label]) => (
+                      <SelectItem key={value} value={value}>
+                        {label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </TableCell>
+              <TableCell>
+                <ComplianceDate date={v.insuranceExpiryDate} />
+              </TableCell>
+              <TableCell>
+                <ComplianceDate date={v.bolloExpiryDate} />
+              </TableCell>
+              <TableCell>
+                <ComplianceDate date={v.revisioneExpiryDate} />
+              </TableCell>
+            </TableRow>
+          ))}
+          {vehicles.length === 0 && (
+            <TableRow>
+              <TableCell colSpan={13} className="text-center text-muted-foreground">
+                Nessun veicolo in flotta.
+              </TableCell>
+            </TableRow>
+          )}
+        </TableBody>
+      </Table>
+    </div>
   );
 }

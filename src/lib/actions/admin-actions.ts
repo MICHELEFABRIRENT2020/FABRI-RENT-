@@ -159,6 +159,107 @@ export async function deleteVehicle(id: string) {
   revalidatePath("/admin/flotta");
 }
 
+export async function updateVehicleDetails(params: {
+  id: string;
+  name: string;
+  brand?: string;
+  model?: string;
+  category: string;
+  dailyRate: number;
+  seats?: number;
+  transmission?: string;
+  fuelType?: string;
+  plate?: string;
+  chassisNumber?: string;
+  year?: number;
+  odometerKm?: number;
+  bolloExpiryDate?: string;
+  revisioneExpiryDate?: string;
+  ownershipType: "aziendale" | "leasing" | "sub_noleggio" | "comodato_uso" | "altro";
+  purchaseVendor?: string;
+  purchaseDate?: string;
+  purchasePrice?: number;
+  purchasePaymentMethod?: string;
+}) {
+  const { user, tenantId } = await assertAdmin();
+  await prisma.vehicle.update({
+    where: { id: params.id, tenantId },
+    data: {
+      name: params.name,
+      brand: params.brand,
+      model: params.model,
+      category: params.category,
+      dailyRate: params.dailyRate,
+      seats: params.seats,
+      transmission: params.transmission,
+      fuelType: params.fuelType,
+      plate: params.plate || undefined,
+      chassisNumber: params.chassisNumber || undefined,
+      year: params.year,
+      odometerKm: params.odometerKm,
+      bolloExpiryDate: params.bolloExpiryDate ? new Date(params.bolloExpiryDate) : undefined,
+      revisioneExpiryDate: params.revisioneExpiryDate ? new Date(params.revisioneExpiryDate) : undefined,
+      ownershipType: params.ownershipType,
+      purchaseVendor: params.purchaseVendor || undefined,
+      purchaseDate: params.purchaseDate ? new Date(params.purchaseDate) : undefined,
+      purchasePrice: params.purchasePrice,
+      purchasePaymentMethod: params.purchasePaymentMethod || undefined,
+    },
+  });
+  await logAudit({ tenantId, actorId: user.id, action: "vehicle_updated", entityType: "vehicle", entityId: params.id });
+  revalidatePath("/admin/flotta");
+  revalidatePath(`/admin/flotta/${params.id}`);
+}
+
+// ---------------------------------------------------------------------------
+// Polizze assicurative veicolo (section 9)
+// ---------------------------------------------------------------------------
+
+export async function createInsurancePolicy(params: {
+  vehicleId: string;
+  company: string;
+  policyNumber: string;
+  rcaAmount?: number;
+  kaskoAmount?: number;
+  theftFireAmount?: number;
+  damageAmount?: number;
+  periodStart: string;
+  periodEnd: string;
+  premium?: number;
+  broker?: string;
+  roadsideAssistance: boolean;
+  gpsTracking: boolean;
+}) {
+  const { user, tenantId } = await assertAdmin();
+  const policy = await prisma.vehicleInsurancePolicy.create({
+    data: {
+      tenantId,
+      vehicleId: params.vehicleId,
+      company: params.company,
+      policyNumber: params.policyNumber,
+      rcaAmount: params.rcaAmount,
+      kaskoAmount: params.kaskoAmount,
+      theftFireAmount: params.theftFireAmount,
+      damageAmount: params.damageAmount,
+      periodStart: new Date(params.periodStart),
+      periodEnd: new Date(params.periodEnd),
+      premium: params.premium,
+      broker: params.broker,
+      roadsideAssistance: params.roadsideAssistance,
+      gpsTracking: params.gpsTracking,
+    },
+  });
+  await logAudit({ tenantId, actorId: user.id, action: "insurance_policy_created", entityType: "vehicle_insurance_policy", entityId: policy.id });
+  revalidatePath(`/admin/flotta/${params.vehicleId}`);
+}
+
+export async function deleteInsurancePolicy(id: string, vehicleId: string) {
+  const { user, tenantId } = await assertAdmin();
+  await prisma.vehicleInsurancePolicy.delete({ where: { id, tenantId } });
+  await logAudit({ tenantId, actorId: user.id, action: "insurance_policy_deleted", entityType: "vehicle_insurance_policy", entityId: id });
+  revalidatePath(`/admin/flotta/${vehicleId}`);
+}
+
 // ---------------------------------------------------------------------------
 // Staff / utenti (section 28: RBAC, più operatori)
 // ---------------------------------------------------------------------------
