@@ -8,7 +8,9 @@ import { DocumentAuditPanel } from "@/components/desk/document-audit-panel";
 import { CheckInPanel } from "@/components/desk/checkin-panel";
 import { CheckOutPanel } from "@/components/desk/checkout-panel";
 import { PriceOverridePanel } from "@/components/desk/price-override-panel";
+import { PaymentPanel } from "@/components/desk/payment-panel";
 import { requireTenant } from "@/lib/session";
+import { isSumupConfigured } from "@/lib/sumup";
 
 export default async function DeskBookingDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -90,6 +92,19 @@ export default async function DeskBookingDetailPage({ params }: { params: Promis
       </Card>
 
       <DocumentAuditPanel documents={documents} />
+
+      <PaymentPanel
+        bookingId={booking.id}
+        sumupEnabled={isSumupConfigured()}
+        payments={booking.payments.map((p) => ({
+          id: p.id,
+          method: p.method,
+          status: p.status,
+          amount: p.amount.toString(),
+          sumupCheckoutId: p.sumupCheckoutId,
+          createdAt: p.createdAt.toISOString(),
+        }))}
+      />
 
       {!booking.checkInAt && <CheckInPanel bookingId={booking.id} customerPhone={booking.user.phone} />}
 
