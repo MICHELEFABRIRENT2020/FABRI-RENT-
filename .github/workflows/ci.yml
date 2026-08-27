@@ -26,6 +26,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - run: npx prisma generate --schema=./prisma/schema.prisma
       - run: npm run lint
       - run: npx tsc --noEmit
 
@@ -38,6 +39,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - run: npx prisma generate --schema=./prisma/schema.prisma
       - run: npm run test
 
   # Dedicated Postgres service so unit-tests (which need no DB) stay fast
@@ -64,6 +66,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - run: npx prisma generate --schema=./prisma/schema.prisma
       - run: npx prisma migrate deploy
       - run: npm run test:integration
 
@@ -102,6 +105,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - run: npx prisma generate --schema=./prisma/schema.prisma
       - run: npx prisma migrate deploy
       - run: npm run db:seed
       - run: npx playwright install --with-deps chromium

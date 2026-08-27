@@ -6,8 +6,8 @@
     "node": "22.x"
   },
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
+    "dev": "prisma generate --schema=./prisma/schema.prisma && next dev",
+    "build": "prisma generate --schema=./prisma/schema.prisma && next build",
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run --config vitest.config.mts",
@@ -17,7 +17,7 @@
     "cap:sync": "cap sync",
     "cap:android": "cap open android",
     "cap:ios": "cap open ios",
-    "postinstall": "prisma generate --schema=./prisma/schema.prisma",
+    "postinstall": "echo 'Skipping prisma generate in postinstall'",
     "db:migrate": "prisma migrate dev",
     "db:seed": "tsx prisma/seed.ts",
     "db:seed-catalog": "tsx prisma/seed-vehicle-catalog.ts",

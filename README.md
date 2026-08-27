@@ -111,7 +111,7 @@ o ignorate manualmente restano tali finche' la condizione non cambia.
 ## Setup locale
 
 ```bash
-npm install                 # esegue anche `prisma generate` (postinstall)
+npm install                 # `prisma generate` gira dentro `dev`/`build`, non più in postinstall
 cp .env.example .env        # valorizza DATABASE_URL e AUTH_SECRET
 npm run db:migrate          # applica le migration Prisma
 npm run db:seed             # crea tenant demo, utenti, flotta, tariffe
