@@ -38,7 +38,7 @@ export default async function ContractsPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Contratti</h1>
         <Button asChild size="sm">
-          <Link href="/" target="_blank">
+          <Link href="/desk/contratti/nuovo">
             <Plus className="mr-1 size-4" /> Nuovo Contratto
           </Link>
         </Button>

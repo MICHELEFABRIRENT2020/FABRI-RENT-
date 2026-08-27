@@ -38,6 +38,30 @@ export async function findAvailableVehiclesInCategory(params: {
   return candidates.filter((vehicle) => vehicle.bookings.length === 0);
 }
 
+/** Direct-selection availability check (desk walk-in flow: the operator already knows which car keys they're handing over). */
+export async function isVehicleAvailable(params: {
+  tenantId: string;
+  vehicleId: string;
+  startDate: Date;
+  endDate: Date;
+  excludeBookingId?: string;
+}): Promise<boolean> {
+  const vehicle = await prisma.vehicle.findFirst({
+    where: { tenantId: params.tenantId, id: params.vehicleId, status: "available" },
+    include: {
+      bookings: {
+        where: {
+          status: { in: [...ACTIVE_BOOKING_STATUSES] },
+          id: params.excludeBookingId ? { not: params.excludeBookingId } : undefined,
+          startDate: { lt: params.endDate },
+          endDate: { gt: params.startDate },
+        },
+      },
+    },
+  });
+  return Boolean(vehicle) && vehicle!.bookings.length === 0;
+}
+
 export async function assignVehicleForBooking(params: {
   tenantId: string;
   category: string;
