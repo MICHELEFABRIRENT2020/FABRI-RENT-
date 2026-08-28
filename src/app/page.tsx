@@ -3,7 +3,7 @@ import { BookingWidget } from "@/components/booking/booking-widget";
 import { SiteHeader } from "@/components/site/site-header";
 import { SiteFooter } from "@/components/site/site-footer";
 import { Card, CardContent } from "@/components/ui/card";
-import { ShieldCheck, Clock, MapPin, CreditCard } from "lucide-react";
+import { ShieldCheck, Clock, MapPin, Wallet } from "lucide-react";
 import { getPublicTenant } from "@/lib/tenant";
 import { DirectionsCard } from "@/components/site/directions-card";
 
@@ -24,10 +24,16 @@ const HIGHLIGHTS = [
     description: "Ritiro e riconsegna sempre nella nostra sede principale.",
   },
   {
-    icon: CreditCard,
-    title: "Pagamento sicuro",
-    description: "Pre-autorizzazione cauzionale o addebito diretto tramite Stripe.",
+    icon: Wallet,
+    title: "Paghi al ritiro",
+    description: "Nessun addebito online: saldo e cauzione si regolano direttamente in sede.",
   },
+];
+
+const STATS = [
+  { value: "100%", label: "Parco Revisionato" },
+  { value: "< 5 min", label: "Tempo Ritiro" },
+  { value: "24/7", label: "Supporto Clienti" },
 ];
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -39,26 +45,45 @@ export default async function Home() {
   const tenant = await getPublicTenant();
 
   return (
-    <>
+    <div className="storefront flex flex-1 flex-col bg-background text-foreground">
       <SiteHeader />
       <main className="flex flex-1 flex-col">
-        <section className="relative flex flex-col items-center gap-10 overflow-hidden bg-gradient-to-b from-primary/10 via-background to-background px-4 py-16 sm:py-24">
-          <div className="max-w-2xl text-center">
-            <p className="mb-3 text-sm font-medium uppercase tracking-wide text-primary">{tenant.name}</p>
-            <h1 className="text-balance text-4xl font-bold tracking-tight sm:text-5xl">
-              Noleggio auto e parcheggio, tutto in un&apos;unica piattaforma
-            </h1>
-            <p className="mt-4 text-pretty text-muted-foreground sm:text-lg">
-              Prenota in pochi click il tuo veicolo o il tuo posto auto presso la nostra sede
-              {tenant.address ? ` di ${tenant.address}` : ""}.
-            </p>
+        <section className="relative overflow-hidden px-4 py-16 sm:py-24">
+          <div className="pointer-events-none absolute -top-24 right-1/2 h-72 w-72 translate-x-1/2 rounded-full bg-primary/10 blur-3xl sm:right-24 sm:translate-x-0" />
+          <div className="mx-auto grid w-full max-w-6xl items-center gap-12 lg:grid-cols-12">
+            <div className="space-y-6 lg:col-span-7">
+              <p className="inline-block rounded-full border border-border bg-secondary/50 px-4 py-1.5 text-xs font-medium tracking-wide text-muted-foreground">
+                {tenant.name}
+              </p>
+              <h1 className="text-balance text-5xl font-extrabold leading-none tracking-tight lg:text-7xl">
+                Guidare l&apos;eccellenza.
+                <br />
+                <span className="bg-gradient-to-br from-foreground to-primary bg-clip-text text-transparent">
+                  Senza compromessi.
+                </span>
+              </h1>
+              <p className="max-w-xl text-pretty text-lg leading-relaxed text-muted-foreground">
+                Dalle city car piu&apos; agili ai SUV, prenota in pochi click il tuo veicolo o il tuo
+                posto auto presso la nostra sede{tenant.address ? ` di ${tenant.address}` : ""}.
+              </p>
+              <div className="grid grid-cols-3 gap-4 border-t border-border pt-6">
+                {STATS.map((stat) => (
+                  <div key={stat.label}>
+                    <div className="text-2xl font-bold text-foreground">{stat.value}</div>
+                    <div className="text-xs font-semibold uppercase text-muted-foreground">{stat.label}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="lg:col-span-5">
+              <BookingWidget />
+            </div>
           </div>
-          <BookingWidget />
         </section>
 
-        <section className="mx-auto grid w-full max-w-5xl gap-4 px-4 py-16 sm:grid-cols-2 lg:grid-cols-4">
+        <section className="mx-auto grid w-full max-w-6xl gap-4 px-4 py-16 sm:grid-cols-2 lg:grid-cols-4">
           {HIGHLIGHTS.map((item) => (
-            <Card key={item.title}>
+            <Card key={item.title} className="border-border bg-card/70 backdrop-blur">
               <CardContent className="flex flex-col items-start gap-3 pt-6">
                 <item.icon className="size-6 text-primary" />
                 <h3 className="font-semibold">{item.title}</h3>
@@ -69,7 +94,7 @@ export default async function Home() {
         </section>
 
         {tenant.address && (
-          <section className="mx-auto w-full max-w-5xl px-4 pb-16">
+          <section className="mx-auto w-full max-w-6xl px-4 pb-16">
             <DirectionsCard
               address={tenant.address}
               officeCoordinates={
@@ -82,6 +107,6 @@ export default async function Home() {
         )}
       </main>
       <SiteFooter />
-    </>
+    </div>
   );
 }

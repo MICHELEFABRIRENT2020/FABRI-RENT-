@@ -31,7 +31,7 @@ export function BookingWidget() {
   const router = useRouter();
 
   return (
-    <Card className="w-full max-w-3xl shadow-xl">
+    <Card className="w-full border-border bg-card/70 shadow-[0_0_50px_-10px_rgba(212,175,55,0.25)] backdrop-blur-xl">
       <CardContent className="pt-6">
         <div className="mb-4 flex items-center gap-2 text-sm text-muted-foreground">
           <MapPin className="size-4" />

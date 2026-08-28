@@ -123,6 +123,34 @@
   --sidebar-ring: oklch(0.74 0.16 231 / 60%);
 }
 
+/*
+ * Public storefront "ultra luxe" theme - near-black + gold, scoped via a
+ * `.storefront` wrapper around the customer-facing pages (home, prenota/*,
+ * prenotazioni/[id]) the same way `.dark` is scoped to /desk and /admin.
+ * Kept separate from `.dark` (which stays the blue-accented gestionale
+ * theme) so this doesn't bleed into the operator/admin panels.
+ */
+.storefront {
+  --background: oklch(0.04 0.002 264);
+  --foreground: oklch(0.97 0.004 264);
+  --card: oklch(0.12 0.004 264);
+  --card-foreground: oklch(0.97 0.004 264);
+  --popover: oklch(0.12 0.004 264);
+  --popover-foreground: oklch(0.97 0.004 264);
+  --primary: oklch(0.77 0.14 85);
+  --primary-foreground: oklch(0.145 0.02 264);
+  --secondary: oklch(0.22 0.006 264);
+  --secondary-foreground: oklch(0.97 0.004 264);
+  --muted: oklch(0.17 0.005 264);
+  --muted-foreground: oklch(0.64 0.008 264);
+  --accent: oklch(0.3 0.045 85);
+  --accent-foreground: oklch(0.97 0.004 264);
+  --destructive: oklch(0.58 0.22 25);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 12%);
+  --ring: oklch(0.77 0.14 85 / 55%);
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
