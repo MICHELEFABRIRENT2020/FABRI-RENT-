@@ -33,23 +33,23 @@ export function BookingWidget() {
   const router = useRouter();
 
   return (
-    <Card className="cockpit-panel w-full rounded-2xl border-white/10 bg-card/60 p-px backdrop-blur-2xl">
-      <CardContent className="cockpit-inset rounded-[calc(1rem-1px)] pt-6">
-        <div className="cockpit-well mb-5 flex items-center gap-3 rounded-xl p-3">
-          <MapPin className="size-4 shrink-0 text-primary drop-shadow-[0_0_6px_var(--primary)]" />
+    <Card className="premium-panel w-full rounded-2xl border-white/10 bg-card/60 p-px backdrop-blur-md">
+      <CardContent className="rounded-[calc(1rem-1px)] pt-6">
+        <div className="premium-well mb-5 flex items-center gap-3 rounded-xl p-3">
+          <MapPin className="size-4 shrink-0 text-primary" />
           <span className="text-sm font-medium">Ritiro e riconsegna presso Via Privata Detta Sacra 33</span>
         </div>
         <Tabs defaultValue="rent">
-          <TabsList className="cockpit-well grid h-11 w-full grid-cols-2 rounded-full p-1">
+          <TabsList className="premium-well grid h-11 w-full grid-cols-2 rounded-full p-1">
             <TabsTrigger
               value="rent"
-              className="gap-2 rounded-full text-xs font-bold tracking-wide uppercase data-active:shadow-[0_0_16px_-2px_var(--primary)]"
+              className="gap-2 rounded-full text-xs font-bold tracking-wide uppercase data-active:shadow-[0_0_8px_-3px_var(--primary)]"
             >
               <Car className="size-4" /> Noleggio Auto
             </TabsTrigger>
             <TabsTrigger
               value="parking"
-              className="gap-2 rounded-full text-xs font-bold tracking-wide uppercase data-active:shadow-[0_0_16px_-2px_var(--primary)]"
+              className="gap-2 rounded-full text-xs font-bold tracking-wide uppercase data-active:shadow-[0_0_8px_-3px_var(--primary)]"
             >
               <ParkingCircle className="size-4" /> Parcheggio (Parking Go)
             </TabsTrigger>
@@ -101,7 +101,7 @@ function RentTab({ onSearch }: { onSearch: (params: Record<string, string>) => v
           value={start}
           onChange={(e) => setStart(e.target.value)}
           required
-          className="cockpit-well h-10"
+          className="premium-well h-10"
         />
       </div>
       <div className="space-y-2">
@@ -114,7 +114,7 @@ function RentTab({ onSearch }: { onSearch: (params: Record<string, string>) => v
           value={end}
           onChange={(e) => setEnd(e.target.value)}
           required
-          className="cockpit-well h-10"
+          className="premium-well h-10"
         />
       </div>
       <div className="space-y-2 sm:col-span-2">
@@ -122,7 +122,7 @@ function RentTab({ onSearch }: { onSearch: (params: Record<string, string>) => v
           Categoria veicolo
         </Label>
         <Select value={category} onValueChange={setCategory}>
-          <SelectTrigger id="rent-category" className="cockpit-well w-full">
+          <SelectTrigger id="rent-category" className="premium-well w-full">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -137,9 +137,9 @@ function RentTab({ onSearch }: { onSearch: (params: Record<string, string>) => v
       <Button
         type="submit"
         size="lg"
-        className="engine-button text-sm font-bold tracking-wide uppercase transition-transform active:scale-[0.98] sm:col-span-2"
+        className="premium-cta text-sm font-bold tracking-wide uppercase transition-transform active:scale-[0.98] sm:col-span-2"
       >
-        Mostra offerte
+        Cerca auto
       </Button>
     </form>
   );
@@ -174,7 +174,7 @@ function ParkingTab({ onSearch }: { onSearch: (params: Record<string, string>) =
           value={start}
           onChange={(e) => setStart(e.target.value)}
           required
-          className="cockpit-well h-10"
+          className="premium-well h-10"
         />
       </div>
       <div className="space-y-2">
@@ -187,7 +187,7 @@ function ParkingTab({ onSearch }: { onSearch: (params: Record<string, string>) =
           value={end}
           onChange={(e) => setEnd(e.target.value)}
           required
-          className="cockpit-well h-10"
+          className="premium-well h-10"
         />
       </div>
       <div className="space-y-2">
@@ -195,7 +195,7 @@ function ParkingTab({ onSearch }: { onSearch: (params: Record<string, string>) =
           Categoria
         </Label>
         <Select value={category} onValueChange={setCategory}>
-          <SelectTrigger id="park-category" className="cockpit-well w-full">
+          <SelectTrigger id="park-category" className="premium-well w-full">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -210,7 +210,7 @@ function ParkingTab({ onSearch }: { onSearch: (params: Record<string, string>) =
           Tipo posto
         </Label>
         <Select value={slotType} onValueChange={setSlotType}>
-          <SelectTrigger id="park-slot" className="cockpit-well w-full">
+          <SelectTrigger id="park-slot" className="premium-well w-full">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -228,7 +228,7 @@ function ParkingTab({ onSearch }: { onSearch: (params: Record<string, string>) =
       <Button
         type="submit"
         size="lg"
-        className="engine-button text-sm font-bold tracking-wide uppercase transition-transform active:scale-[0.98] sm:col-span-2"
+        className="premium-cta text-sm font-bold tracking-wide uppercase transition-transform active:scale-[0.98] sm:col-span-2"
       >
         Verifica disponibilita&apos;
       </Button>
