@@ -93,6 +93,39 @@ const STATS = [
   { value: "24/7", label: "Supporto Clienti" },
 ];
 
+/*
+ * Real services offered, one editorial block per booking flow the Search
+ * Widget actually exposes (rent tab / parking tab in booking-widget.tsx).
+ * Every fact below is drawn straight from existing business logic - none
+ * invented: 24h billing (src/lib/rental-time.ts), insurance zones
+ * (src/lib/insurance-zone.ts), Parking Go's slot types/category options
+ * and mandatory key handover (ParkingTab in booking-widget.tsx). No
+ * airport/station/port transfer claim, no chauffeur/concierge, no extra
+ * service not already live in the checkout flow.
+ */
+const SERVICES = [
+  {
+    index: "01",
+    title: "Noleggio Auto",
+    description: "Dalla city car al furgone, ritiro e riconsegna presso la nostra sede.",
+    facts: [
+      "Tariffe a blocchi esatti di 24 ore, senza sorprese",
+      "Assicurazione modulata per zona: franchigie al Sud Italia, KASKO Senza Cauzione al Centro-Nord",
+      "Saldo e cauzione gestiti direttamente in sede al ritiro",
+    ],
+  },
+  {
+    index: "02",
+    title: "Parcheggio (Parking Go)",
+    description: "Un posto sicuro per moto, auto o furgone, con consegna chiavi in sede.",
+    facts: [
+      "Posto auto scoperto o coperto (+40%)",
+      "Disponibile per moto, auto e furgoni",
+      "Consegna chiavi in sede obbligatoria per l'attivazione del servizio",
+    ],
+  },
+];
+
 export async function generateMetadata(): Promise<Metadata> {
   const tenant = await getPublicTenant();
   return { title: `${tenant.name} - Noleggio Auto & Parcheggio` };
@@ -161,6 +194,32 @@ export default async function Home() {
         </section>
 
         <FleetShowcase vehicles={fleetShowcaseVehicles} fleetHref="/flotta" />
+
+        <section className="mx-auto w-full max-w-6xl px-4 py-16">
+          <div className="mb-10 space-y-2">
+            <h2 className="text-3xl font-bold tracking-tight">I nostri servizi</h2>
+            <p className="text-muted-foreground">
+              Noleggio auto e parcheggio, entrambi gestiti direttamente presso la nostra sede.
+            </p>
+          </div>
+          <div className="grid gap-10 border-t border-border pt-10 lg:grid-cols-2 lg:gap-16">
+            {SERVICES.map((service) => (
+              <div key={service.index} className="space-y-5">
+                <span className="text-sm font-bold text-primary">{service.index}</span>
+                <h3 className="text-2xl font-bold tracking-tight">{service.title}</h3>
+                <p className="text-muted-foreground">{service.description}</p>
+                <ul className="space-y-3 border-t border-border pt-5">
+                  {service.facts.map((fact) => (
+                    <li key={fact} className="flex gap-3 text-sm text-foreground/90">
+                      <span className="mt-2 size-1 shrink-0 rounded-full bg-primary" aria-hidden="true" />
+                      {fact}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </section>
 
         <section className="mx-auto grid w-full max-w-6xl gap-4 px-4 py-16 sm:grid-cols-2 lg:grid-cols-4">
           {HIGHLIGHTS.map((item) => (
