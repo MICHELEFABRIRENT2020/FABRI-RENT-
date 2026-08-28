@@ -33,18 +33,24 @@ export function BookingWidget() {
   const router = useRouter();
 
   return (
-    <Card className="w-full border-border bg-card/70 shadow-[0_0_50px_-10px_var(--accent)] backdrop-blur-xl">
-      <CardContent className="pt-6">
-        <div className="mb-5 flex items-center gap-3 rounded-xl border border-border bg-muted/50 p-3">
-          <MapPin className="size-4 shrink-0 text-primary" />
+    <Card className="cockpit-panel w-full rounded-2xl border-white/10 bg-card/60 p-px backdrop-blur-2xl">
+      <CardContent className="cockpit-inset rounded-[calc(1rem-1px)] pt-6">
+        <div className="cockpit-well mb-5 flex items-center gap-3 rounded-xl p-3">
+          <MapPin className="size-4 shrink-0 text-primary drop-shadow-[0_0_6px_var(--primary)]" />
           <span className="text-sm font-medium">Ritiro e riconsegna presso Via Privata Detta Sacra 33</span>
         </div>
         <Tabs defaultValue="rent">
-          <TabsList className="grid h-11 w-full grid-cols-2 rounded-full p-1">
-            <TabsTrigger value="rent" className="gap-2 rounded-full text-xs font-bold tracking-wide uppercase">
+          <TabsList className="cockpit-well grid h-11 w-full grid-cols-2 rounded-full p-1">
+            <TabsTrigger
+              value="rent"
+              className="gap-2 rounded-full text-xs font-bold tracking-wide uppercase data-active:shadow-[0_0_16px_-2px_var(--primary)]"
+            >
               <Car className="size-4" /> Noleggio Auto
             </TabsTrigger>
-            <TabsTrigger value="parking" className="gap-2 rounded-full text-xs font-bold tracking-wide uppercase">
+            <TabsTrigger
+              value="parking"
+              className="gap-2 rounded-full text-xs font-bold tracking-wide uppercase data-active:shadow-[0_0_16px_-2px_var(--primary)]"
+            >
               <ParkingCircle className="size-4" /> Parcheggio (Parking Go)
             </TabsTrigger>
           </TabsList>
@@ -89,20 +95,34 @@ function RentTab({ onSearch }: { onSearch: (params: Record<string, string>) => v
         <Label htmlFor="rent-start" className="text-xs font-bold tracking-wide text-muted-foreground uppercase">
           Data e ora ritiro
         </Label>
-        <Input id="rent-start" type="datetime-local" value={start} onChange={(e) => setStart(e.target.value)} required />
+        <Input
+          id="rent-start"
+          type="datetime-local"
+          value={start}
+          onChange={(e) => setStart(e.target.value)}
+          required
+          className="cockpit-well h-10"
+        />
       </div>
       <div className="space-y-2">
         <Label htmlFor="rent-end" className="text-xs font-bold tracking-wide text-muted-foreground uppercase">
           Data e ora consegna
         </Label>
-        <Input id="rent-end" type="datetime-local" value={end} onChange={(e) => setEnd(e.target.value)} required />
+        <Input
+          id="rent-end"
+          type="datetime-local"
+          value={end}
+          onChange={(e) => setEnd(e.target.value)}
+          required
+          className="cockpit-well h-10"
+        />
       </div>
       <div className="space-y-2 sm:col-span-2">
         <Label htmlFor="rent-category" className="text-xs font-bold tracking-wide text-muted-foreground uppercase">
           Categoria veicolo
         </Label>
         <Select value={category} onValueChange={setCategory}>
-          <SelectTrigger id="rent-category" className="w-full">
+          <SelectTrigger id="rent-category" className="cockpit-well w-full">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -114,7 +134,11 @@ function RentTab({ onSearch }: { onSearch: (params: Record<string, string>) => v
           </SelectContent>
         </Select>
       </div>
-      <Button type="submit" size="lg" className="text-sm font-bold tracking-wide uppercase sm:col-span-2">
+      <Button
+        type="submit"
+        size="lg"
+        className="engine-button text-sm font-bold tracking-wide uppercase transition-transform active:scale-[0.98] sm:col-span-2"
+      >
         Mostra offerte
       </Button>
     </form>
@@ -144,20 +168,34 @@ function ParkingTab({ onSearch }: { onSearch: (params: Record<string, string>) =
         <Label htmlFor="park-start" className="text-xs font-bold tracking-wide text-muted-foreground uppercase">
           Ingresso
         </Label>
-        <Input id="park-start" type="datetime-local" value={start} onChange={(e) => setStart(e.target.value)} required />
+        <Input
+          id="park-start"
+          type="datetime-local"
+          value={start}
+          onChange={(e) => setStart(e.target.value)}
+          required
+          className="cockpit-well h-10"
+        />
       </div>
       <div className="space-y-2">
         <Label htmlFor="park-end" className="text-xs font-bold tracking-wide text-muted-foreground uppercase">
           Uscita
         </Label>
-        <Input id="park-end" type="datetime-local" value={end} onChange={(e) => setEnd(e.target.value)} required />
+        <Input
+          id="park-end"
+          type="datetime-local"
+          value={end}
+          onChange={(e) => setEnd(e.target.value)}
+          required
+          className="cockpit-well h-10"
+        />
       </div>
       <div className="space-y-2">
         <Label htmlFor="park-category" className="text-xs font-bold tracking-wide text-muted-foreground uppercase">
           Categoria
         </Label>
         <Select value={category} onValueChange={setCategory}>
-          <SelectTrigger id="park-category" className="w-full">
+          <SelectTrigger id="park-category" className="cockpit-well w-full">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -172,7 +210,7 @@ function ParkingTab({ onSearch }: { onSearch: (params: Record<string, string>) =
           Tipo posto
         </Label>
         <Select value={slotType} onValueChange={setSlotType}>
-          <SelectTrigger id="park-slot" className="w-full">
+          <SelectTrigger id="park-slot" className="cockpit-well w-full">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -187,7 +225,11 @@ function ParkingTab({ onSearch }: { onSearch: (params: Record<string, string>) =
           Consegna chiavi in sede <span className="text-destructive">*</span>
         </Label>
       </div>
-      <Button type="submit" size="lg" className="text-sm font-bold tracking-wide uppercase sm:col-span-2">
+      <Button
+        type="submit"
+        size="lg"
+        className="engine-button text-sm font-bold tracking-wide uppercase transition-transform active:scale-[0.98] sm:col-span-2"
+      >
         Verifica disponibilita&apos;
       </Button>
     </form>

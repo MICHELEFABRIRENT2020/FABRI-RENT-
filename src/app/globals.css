@@ -153,6 +153,45 @@
   --radius: 12px;
 }
 
+/*
+ * "Cockpit" panel treatment for the storefront's hero booking widget -
+ * glass depth (outer glow + inner bevel highlight) and recessed "well"
+ * containers for inputs/tabs, all driven by the theme tokens above
+ * (--primary, --border) rather than hardcoded colors, so it re-themes
+ * along with everything else. Kept as plain CSS classes (not Tailwind
+ * arbitrary values) because layered box-shadow + keyframes don't fit
+ * cleanly in a className string.
+ */
+.cockpit-panel {
+  box-shadow:
+    0 0 60px -14px var(--primary),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.08),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+.cockpit-well {
+  background: var(--muted);
+  border: 1px solid var(--border);
+  box-shadow:
+    inset 0 2px 4px 0 rgba(0, 0, 0, 0.4),
+    inset 0 -1px 0 0 rgba(255, 255, 255, 0.05);
+}
+.engine-button {
+  animation: engine-pulse 2.5s ease-in-out infinite;
+}
+@keyframes engine-pulse {
+  0%,
+  100% {
+    box-shadow:
+      0 0 18px 0 var(--primary),
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.25);
+  }
+  50% {
+    box-shadow:
+      0 0 34px 6px var(--primary),
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.35);
+  }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
