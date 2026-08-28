@@ -35,16 +35,16 @@ export function BookingWidget() {
   return (
     <Card className="w-full border-border bg-card/70 shadow-[0_0_50px_-10px_var(--accent)] backdrop-blur-xl">
       <CardContent className="pt-6">
-        <div className="mb-4 flex items-center gap-2 text-sm text-muted-foreground">
-          <MapPin className="size-4" />
-          <span>Ritiro e riconsegna presso Via Privata Detta Sacra 33</span>
+        <div className="mb-5 flex items-center gap-3 rounded-xl border border-border bg-muted/50 p-3">
+          <MapPin className="size-4 shrink-0 text-primary" />
+          <span className="text-sm font-medium">Ritiro e riconsegna presso Via Privata Detta Sacra 33</span>
         </div>
         <Tabs defaultValue="rent">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="rent" className="gap-2">
+          <TabsList className="grid h-11 w-full grid-cols-2 rounded-full p-1">
+            <TabsTrigger value="rent" className="gap-2 rounded-full text-xs font-bold tracking-wide uppercase">
               <Car className="size-4" /> Noleggio Auto
             </TabsTrigger>
-            <TabsTrigger value="parking" className="gap-2">
+            <TabsTrigger value="parking" className="gap-2 rounded-full text-xs font-bold tracking-wide uppercase">
               <ParkingCircle className="size-4" /> Parcheggio (Parking Go)
             </TabsTrigger>
           </TabsList>
@@ -86,15 +86,21 @@ function RentTab({ onSearch }: { onSearch: (params: Record<string, string>) => v
       }}
     >
       <div className="space-y-2">
-        <Label htmlFor="rent-start">Ritiro</Label>
+        <Label htmlFor="rent-start" className="text-xs font-bold tracking-wide text-muted-foreground uppercase">
+          Data e ora ritiro
+        </Label>
         <Input id="rent-start" type="datetime-local" value={start} onChange={(e) => setStart(e.target.value)} required />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="rent-end">Riconsegna</Label>
+        <Label htmlFor="rent-end" className="text-xs font-bold tracking-wide text-muted-foreground uppercase">
+          Data e ora consegna
+        </Label>
         <Input id="rent-end" type="datetime-local" value={end} onChange={(e) => setEnd(e.target.value)} required />
       </div>
       <div className="space-y-2 sm:col-span-2">
-        <Label htmlFor="rent-category">Categoria veicolo</Label>
+        <Label htmlFor="rent-category" className="text-xs font-bold tracking-wide text-muted-foreground uppercase">
+          Categoria veicolo
+        </Label>
         <Select value={category} onValueChange={setCategory}>
           <SelectTrigger id="rent-category" className="w-full">
             <SelectValue />
@@ -108,8 +114,8 @@ function RentTab({ onSearch }: { onSearch: (params: Record<string, string>) => v
           </SelectContent>
         </Select>
       </div>
-      <Button type="submit" size="lg" className="sm:col-span-2">
-        Cerca disponibilita&apos;
+      <Button type="submit" size="lg" className="text-sm font-bold tracking-wide uppercase sm:col-span-2">
+        Mostra offerte
       </Button>
     </form>
   );
@@ -135,15 +141,21 @@ function ParkingTab({ onSearch }: { onSearch: (params: Record<string, string>) =
       }}
     >
       <div className="space-y-2">
-        <Label htmlFor="park-start">Ingresso</Label>
+        <Label htmlFor="park-start" className="text-xs font-bold tracking-wide text-muted-foreground uppercase">
+          Ingresso
+        </Label>
         <Input id="park-start" type="datetime-local" value={start} onChange={(e) => setStart(e.target.value)} required />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="park-end">Uscita</Label>
+        <Label htmlFor="park-end" className="text-xs font-bold tracking-wide text-muted-foreground uppercase">
+          Uscita
+        </Label>
         <Input id="park-end" type="datetime-local" value={end} onChange={(e) => setEnd(e.target.value)} required />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="park-category">Categoria</Label>
+        <Label htmlFor="park-category" className="text-xs font-bold tracking-wide text-muted-foreground uppercase">
+          Categoria
+        </Label>
         <Select value={category} onValueChange={setCategory}>
           <SelectTrigger id="park-category" className="w-full">
             <SelectValue />
@@ -156,7 +168,9 @@ function ParkingTab({ onSearch }: { onSearch: (params: Record<string, string>) =
         </Select>
       </div>
       <div className="space-y-2">
-        <Label htmlFor="park-slot">Tipo posto</Label>
+        <Label htmlFor="park-slot" className="text-xs font-bold tracking-wide text-muted-foreground uppercase">
+          Tipo posto
+        </Label>
         <Select value={slotType} onValueChange={setSlotType}>
           <SelectTrigger id="park-slot" className="w-full">
             <SelectValue />
@@ -173,7 +187,7 @@ function ParkingTab({ onSearch }: { onSearch: (params: Record<string, string>) =
           Consegna chiavi in sede <span className="text-destructive">*</span>
         </Label>
       </div>
-      <Button type="submit" size="lg" className="sm:col-span-2">
+      <Button type="submit" size="lg" className="text-sm font-bold tracking-wide uppercase sm:col-span-2">
         Verifica disponibilita&apos;
       </Button>
     </form>
