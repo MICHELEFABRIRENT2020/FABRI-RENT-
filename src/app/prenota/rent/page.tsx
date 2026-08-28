@@ -5,6 +5,7 @@ import { getPublicTenant } from "@/lib/tenant";
 import { SiteHeader } from "@/components/site/site-header";
 import { SiteFooter } from "@/components/site/site-footer";
 import { RentCheckoutWizard } from "@/components/booking/rent-checkout-wizard";
+import { VehicleCategoryIcon } from "@/components/booking/vehicle-category-icon";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export default async function RentBookingPage({
@@ -71,7 +72,10 @@ export default async function RentBookingPage({
     <>
       <SiteHeader />
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-10">
-        <h1 className="mb-6 text-2xl font-bold">Prenota: {representative.name} o simile</h1>
+        <div className="mb-6 flex items-center gap-4">
+          <VehicleCategoryIcon category={category} className="size-16 shrink-0" iconClassName="size-8" />
+          <h1 className="text-2xl font-bold">Prenota: {representative.name} o simile</h1>
+        </div>
         <RentCheckoutWizard
           vehicleCategory={category}
           vehicleName={representative.name}

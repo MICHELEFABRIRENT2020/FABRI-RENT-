@@ -16,6 +16,7 @@ import { InvoiceForm, type InvoiceFormValues } from "@/components/booking/invoic
 import { useExtraServices, computeExtrasTotalPreview } from "@/lib/hooks/use-extra-services";
 import { formatItalianDate } from "@/lib/rental-time";
 import { isKasko } from "@/lib/insurance-zone";
+import { VehicleCategoryIcon } from "@/components/booking/vehicle-category-icon";
 
 const STEPS = ["Assicurazione", "Servizi Extra", "Documenti e Fatturazione", "Pagamento"] as const;
 
@@ -218,6 +219,11 @@ export function RentCheckoutWizard({
             <CardTitle className="text-base">Riepilogo</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 text-sm">
+            <VehicleCategoryIcon
+              category={vehicleCategory}
+              className="mb-2 h-24 w-full"
+              iconClassName="size-10"
+            />
             <p className="font-medium">{vehicleName} o simile</p>
             <p className="text-muted-foreground">{vehicleCategory}</p>
             <Separator className="my-2" />
