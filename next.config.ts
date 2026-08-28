@@ -38,6 +38,15 @@ const nextConfig: NextConfig = {
   // on .next/next-server (confirmed against public Vercel/Next.js reports -
   // see e.g. vercel/next.js#43654). Vercel sets VERCEL=1 during its builds.
   output: process.env.VERCEL ? undefined : "standalone",
+  // Prisma's generator output is customized to src/generated/prisma (outside
+  // node_modules), so Next's automatic file tracing doesn't reliably follow
+  // the dynamic require() of the native query engine binary into the
+  // deployed serverless function - confirmed by the runtime error naming
+  // the exact rhel-openssl-3.0.x engine file as missing even though
+  // binaryTargets generates it. Force it into every route's trace.
+  outputFileTracingIncludes: {
+    "/*": ["./src/generated/prisma/**/*"],
+  },
   async headers() {
     return [{ source: "/:path*", headers: SECURITY_HEADERS }];
   },
