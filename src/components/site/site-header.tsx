@@ -16,7 +16,10 @@ export async function SiteHeader() {
             <Image src="/brand/logo.png" alt={tenant.name} width={1140} height={235} priority className="h-7 w-auto sm:h-8" />
           </span>
         </Link>
-        <nav className="flex items-center gap-2">
+        <nav className="flex items-center gap-4">
+          <Link href="/flotta" className="text-sm font-medium text-muted-foreground hover:text-foreground">
+            Flotta
+          </Link>
           {session?.user ? (
             <UserNav user={session.user} />
           ) : (
