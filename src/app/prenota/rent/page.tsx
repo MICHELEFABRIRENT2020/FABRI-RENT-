@@ -4,6 +4,7 @@ import { computeVehiclePrice } from "@/lib/pricing-engine";
 import { getPublicTenant } from "@/lib/tenant";
 import { SiteHeader } from "@/components/site/site-header";
 import { SiteFooter } from "@/components/site/site-footer";
+import { StorefrontShell } from "@/components/site/storefront-shell";
 import { RentCheckoutWizard } from "@/components/booking/rent-checkout-wizard";
 import { VehicleCategoryIcon } from "@/components/booking/vehicle-category-icon";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -24,7 +25,7 @@ export default async function RentBookingPage({
 
   if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime()) || endDate <= startDate) {
     return (
-      <>
+      <StorefrontShell>
         <SiteHeader />
         <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-16">
           <Alert variant="destructive">
@@ -33,7 +34,7 @@ export default async function RentBookingPage({
           </Alert>
         </main>
         <SiteFooter />
-      </>
+      </StorefrontShell>
     );
   }
 
@@ -45,7 +46,7 @@ export default async function RentBookingPage({
 
   if (!representative) {
     return (
-      <>
+      <StorefrontShell>
         <SiteHeader />
         <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-16">
           <Alert>
@@ -57,7 +58,7 @@ export default async function RentBookingPage({
           </Alert>
         </main>
         <SiteFooter />
-      </>
+      </StorefrontShell>
     );
   }
 
@@ -69,7 +70,7 @@ export default async function RentBookingPage({
   });
 
   return (
-    <>
+    <StorefrontShell>
       <SiteHeader />
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-10">
         <div className="mb-6 flex items-center gap-4">
@@ -86,6 +87,6 @@ export default async function RentBookingPage({
         />
       </main>
       <SiteFooter />
-    </>
+    </StorefrontShell>
   );
 }

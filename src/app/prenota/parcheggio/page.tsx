@@ -4,6 +4,7 @@ import { computeParkingPrice } from "@/lib/pricing-engine";
 import { getPublicTenant } from "@/lib/tenant";
 import { SiteHeader } from "@/components/site/site-header";
 import { SiteFooter } from "@/components/site/site-footer";
+import { StorefrontShell } from "@/components/site/storefront-shell";
 import { ParkingCheckoutWizard } from "@/components/booking/parking-checkout-wizard";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import type { ParkingCategory, ParkingSlotType } from "@/generated/prisma/client";
@@ -27,7 +28,7 @@ export default async function ParkingBookingPage({
 
   if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime()) || endDate <= startDate) {
     return (
-      <>
+      <StorefrontShell>
         <SiteHeader />
         <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-16">
           <Alert variant="destructive">
@@ -36,7 +37,7 @@ export default async function ParkingBookingPage({
           </Alert>
         </main>
         <SiteFooter />
-      </>
+      </StorefrontShell>
     );
   }
 
@@ -51,7 +52,7 @@ export default async function ParkingBookingPage({
 
   if (!availability.available) {
     return (
-      <>
+      <StorefrontShell>
         <SiteHeader />
         <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-16">
           <Alert variant="destructive">
@@ -63,12 +64,12 @@ export default async function ParkingBookingPage({
           </Alert>
         </main>
         <SiteFooter />
-      </>
+      </StorefrontShell>
     );
   }
 
   return (
-    <>
+    <StorefrontShell>
       <SiteHeader />
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-10">
         <h1 className="mb-6 text-2xl font-bold">Prenota il tuo posto - Parking Go</h1>
@@ -83,6 +84,6 @@ export default async function ParkingBookingPage({
         />
       </main>
       <SiteFooter />
-    </>
+    </StorefrontShell>
   );
 }

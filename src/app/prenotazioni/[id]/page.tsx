@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { SiteHeader } from "@/components/site/site-header";
 import { SiteFooter } from "@/components/site/site-footer";
+import { StorefrontShell } from "@/components/site/storefront-shell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { CheckCircle2 } from "lucide-react";
@@ -18,7 +19,7 @@ export default async function BookingConfirmationPage({ params }: { params: Prom
   if (!booking) notFound();
 
   return (
-    <>
+    <StorefrontShell>
       <SiteHeader />
       <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-16">
         <Card>
@@ -87,6 +88,6 @@ export default async function BookingConfirmationPage({ params }: { params: Prom
         </Card>
       </main>
       <SiteFooter />
-    </>
+    </StorefrontShell>
   );
 }
