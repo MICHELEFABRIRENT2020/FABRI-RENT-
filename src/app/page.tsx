@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import { BookingWidget } from "@/components/booking/booking-widget";
 import { SiteHeader } from "@/components/site/site-header";
 import { SiteFooter } from "@/components/site/site-footer";
@@ -6,6 +7,21 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ShieldCheck, Clock, MapPin, Wallet, Car } from "lucide-react";
 import { getPublicTenant } from "@/lib/tenant";
 import { DirectionsCard } from "@/components/site/directions-card";
+
+/*
+ * Hero visual - no automotive photography exists in the repo yet (see the
+ * Step 8 asset audit: only the brand logo, app icons, and Next.js
+ * boilerplate SVGs are present, nothing automotive). Once real fleet
+ * photography is added under public/, set this to that path (e.g.
+ * "/vehicles/hero.jpg") and the panel switches from the icon placeholder
+ * to a real next/image render automatically. HERO_IMAGE_OBJECT_POSITION
+ * carries one object-position utility per breakpoint (mobile/tablet/desktop
+ * each get their own crop framing) - all default to center since there is
+ * no photo yet to calibrate against; adjust each value independently once
+ * one exists.
+ */
+const HERO_IMAGE_SRC: string | null = null;
+const HERO_IMAGE_OBJECT_POSITION = "object-center md:object-center lg:object-center";
 
 const HIGHLIGHTS = [
   {
@@ -77,18 +93,22 @@ export default async function Home() {
             <div className="motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-4 motion-safe:duration-700 motion-safe:delay-150 flex flex-col gap-6 lg:col-span-5">
               <div className="hero-visual-frame hidden md:block" aria-hidden="true">
                 <div className="hero-visual-panel relative aspect-[3/4] w-full overflow-hidden rounded-3xl border border-border md:aspect-video lg:aspect-square">
-                  {/*
-                    Image slot: once fleet photography is available, replace the
-                    icon below with `<Image fill alt="" className="object-cover"
-                    style={{ objectPosition: "center" }} />` - the panel is
-                    already relative/overflow-hidden with a responsive
-                    aspect-ratio (portrait on the (currently hidden) mobile
-                    size, video/16:9 on tablet, near-square on desktop) so no
-                    single fixed crop is baked in.
-                  */}
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <Car className="size-16 text-primary/35 lg:size-24" strokeWidth={1} />
-                  </div>
+                  {HERO_IMAGE_SRC ? (
+                    <Image
+                      src={HERO_IMAGE_SRC}
+                      alt=""
+                      fill
+                      sizes="(min-width: 1024px) 40vw, (min-width: 768px) 90vw, 100vw"
+                      className={`object-cover ${HERO_IMAGE_OBJECT_POSITION}`}
+                    />
+                  ) : (
+                    // Reserved visual area for future fleet photography (see Step 8
+                    // audit) - icon communicates the intended subject without
+                    // faking a photo. Swap in HERO_IMAGE_SRC above once available.
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <Car className="size-16 text-primary/35 lg:size-24" strokeWidth={1} />
+                    </div>
+                  )}
                   {/* Optional overlay for the future photo (e.g. a gradient for text legibility) - inert/transparent for now. */}
                   <div className="pointer-events-none absolute inset-0" />
                 </div>
