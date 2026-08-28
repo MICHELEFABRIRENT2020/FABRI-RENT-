@@ -124,9 +124,10 @@
 }
 
 /*
- * Public storefront theme - dark premium (SIXT-style orange accent),
- * scoped via a `.storefront` wrapper around the customer-facing pages
- * (home, prenota/*, flotta, prenotazioni/[id]) the same way `.dark` is
+ * Public storefront theme - luxury automotive: near-black/graphite
+ * surfaces, white text, one restrained orange accent - scoped via a
+ * `.storefront` wrapper around the customer-facing pages (home,
+ * prenota/*, flotta, prenotazioni/[id]) the same way `.dark` is
  * scoped to /desk and /admin. Kept separate from `.dark` (which stays
  * its own blue-accented gestionale theme) so this doesn't bleed into
  * the operator/admin panels. Edit these hex values to re-theme the site.
@@ -138,19 +139,23 @@
   --card-foreground: #ffffff;
   --popover: #161618;
   --popover-foreground: #ffffff;
-  --primary: #e50914;
-  --primary-foreground: #ffffff;
+  --primary: #ff5f00;
+  --primary-foreground: #000000;
   --secondary: #222225;
   --secondary-foreground: #a1a1aa;
   --muted: #222225;
   --muted-foreground: #a1a1aa;
-  --accent: #e50914;
-  --accent-foreground: #ffffff;
+  --accent: #ff5f00;
+  --accent-foreground: #000000;
   --destructive: #ef4444;
   --border: #27272a;
   --input: #27272a;
-  --ring: #e5091480;
+  --ring: #ff5f0080;
   --radius: 12px;
+}
+.storefront ::selection {
+  background: var(--primary);
+  color: var(--primary-foreground);
 }
 
 /*
