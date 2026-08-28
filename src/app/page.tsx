@@ -50,23 +50,22 @@ export default async function Home() {
       <main className="flex flex-1 flex-col">
         <section className="relative overflow-hidden px-4 py-16 sm:py-24">
           <div className="pointer-events-none absolute -top-24 right-1/2 h-72 w-72 translate-x-1/2 rounded-full bg-primary/10 blur-3xl sm:right-24 sm:translate-x-0" />
-          <div className="mx-auto grid w-full max-w-6xl items-center gap-10 lg:grid-cols-12 lg:gap-12">
-            <div className="motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-4 motion-safe:duration-700 space-y-6 lg:col-span-7">
-              <p className="inline-block rounded-full border border-border bg-secondary/50 px-4 py-1.5 text-xs font-medium tracking-wide text-muted-foreground">
-                {tenant.name}
-              </p>
-              <h1 className="text-balance text-5xl font-extrabold leading-none tracking-tight lg:text-7xl">
-                Guidare l&apos;eccellenza.
-                <br />
-                <span className="bg-gradient-to-br from-foreground to-primary bg-clip-text text-transparent">
-                  Senza compromessi.
-                </span>
-              </h1>
-              <p className="max-w-xl text-pretty text-lg leading-relaxed text-muted-foreground">
-                Dalle city car piu&apos; agili ai SUV, prenota in pochi click il tuo veicolo o il tuo
-                posto auto presso la nostra sede{tenant.address ? ` di ${tenant.address}` : ""}.
-              </p>
-              <div className="grid grid-cols-3 gap-4 border-t border-border pt-6">
+          <div className="mx-auto grid w-full max-w-6xl gap-10 lg:grid-cols-12 lg:items-stretch lg:gap-12">
+            <div className="motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-4 motion-safe:duration-700 flex flex-col lg:col-span-7 lg:justify-between">
+              <div className="space-y-6">
+                <h1 className="text-balance text-5xl font-extrabold leading-none tracking-tight lg:text-7xl">
+                  Guidare l&apos;eccellenza.
+                  <br />
+                  <span className="bg-gradient-to-br from-foreground to-primary bg-clip-text text-transparent">
+                    Senza compromessi.
+                  </span>
+                </h1>
+                <p className="max-w-xl text-pretty text-lg leading-relaxed text-muted-foreground">
+                  Dalle city car piu&apos; agili ai SUV, prenota in pochi click il tuo veicolo o il tuo
+                  posto auto presso la nostra sede{tenant.address ? ` di ${tenant.address}` : ""}.
+                </p>
+              </div>
+              <div className="mt-10 grid grid-cols-3 gap-4 border-t border-border pt-6 lg:mt-0">
                 {STATS.map((stat) => (
                   <div key={stat.label}>
                     <div className="text-2xl font-bold text-foreground">{stat.value}</div>
@@ -77,9 +76,21 @@ export default async function Home() {
             </div>
             <div className="motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-4 motion-safe:duration-700 motion-safe:delay-150 flex flex-col gap-6 lg:col-span-5">
               <div className="hero-visual-frame hidden md:block" aria-hidden="true">
-                <div className="hero-visual-panel relative flex h-56 items-center justify-center overflow-hidden rounded-3xl border border-border lg:h-[420px]">
-                  <div className="hero-visual-sheen" />
-                  <Car className="relative size-24 text-primary/40 lg:size-32" strokeWidth={1} />
+                <div className="hero-visual-panel relative aspect-[3/4] w-full overflow-hidden rounded-3xl border border-border md:aspect-video lg:aspect-square">
+                  {/*
+                    Image slot: once fleet photography is available, replace the
+                    icon below with `<Image fill alt="" className="object-cover"
+                    style={{ objectPosition: "center" }} />` - the panel is
+                    already relative/overflow-hidden with a responsive
+                    aspect-ratio (portrait on the (currently hidden) mobile
+                    size, video/16:9 on tablet, near-square on desktop) so no
+                    single fixed crop is baked in.
+                  */}
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <Car className="size-16 text-primary/35 lg:size-24" strokeWidth={1} />
+                  </div>
+                  {/* Optional overlay for the future photo (e.g. a gradient for text legibility) - inert/transparent for now. */}
+                  <div className="pointer-events-none absolute inset-0" />
                 </div>
               </div>
               <BookingWidget />

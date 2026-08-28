@@ -43,15 +43,17 @@ export function BookingWidget() {
           <TabsList className="premium-well grid h-12 w-full grid-cols-2 rounded-full p-1">
             <TabsTrigger
               value="rent"
-              className="gap-2 rounded-full text-xs font-bold tracking-wide uppercase data-active:shadow-[0_0_8px_-3px_var(--primary)]"
+              className="gap-1.5 rounded-full text-[11px] font-bold tracking-wide uppercase data-active:shadow-[0_0_8px_-3px_var(--primary)] sm:gap-2 sm:text-xs"
             >
-              <Car className="size-4" /> Noleggio Auto
+              <Car className="size-4 shrink-0" /> Noleggio Auto
             </TabsTrigger>
             <TabsTrigger
               value="parking"
-              className="gap-2 rounded-full text-xs font-bold tracking-wide uppercase data-active:shadow-[0_0_8px_-3px_var(--primary)]"
+              className="gap-1.5 rounded-full text-[11px] font-bold tracking-wide uppercase data-active:shadow-[0_0_8px_-3px_var(--primary)] sm:gap-2 sm:text-xs"
             >
-              <ParkingCircle className="size-4" /> Parcheggio (Parking Go)
+              <ParkingCircle className="size-4 shrink-0" />
+              <span className="sm:hidden">Parcheggio</span>
+              <span className="hidden sm:inline">Parcheggio (Parking Go)</span>
             </TabsTrigger>
           </TabsList>
 
