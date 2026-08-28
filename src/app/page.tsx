@@ -324,14 +324,27 @@ export default async function Home() {
 
         {tenant.address && (
           <section className="mx-auto w-full max-w-6xl px-4 pb-16">
-            <DirectionsCard
-              address={tenant.address}
-              officeCoordinates={
-                tenant.latitude != null && tenant.longitude != null
-                  ? { latitude: Number(tenant.latitude), longitude: Number(tenant.longitude) }
-                  : null
-              }
-            />
+            <div className="premium-panel rounded-3xl border border-border bg-card/40 p-8 sm:p-12">
+              <div className="grid gap-10 lg:grid-cols-2 lg:items-center">
+                <div className="space-y-5">
+                  <h2 className="text-3xl font-bold tracking-tight">Contattaci</h2>
+                  <p className="max-w-md text-muted-foreground">
+                    Ci trovi in sede, oppure prenota direttamente online in pochi minuti.
+                  </p>
+                  <Button asChild size="lg" className="premium-cta text-sm font-bold tracking-wide uppercase">
+                    <a href="#ricerca">Cerca auto</a>
+                  </Button>
+                </div>
+                <DirectionsCard
+                  address={tenant.address}
+                  officeCoordinates={
+                    tenant.latitude != null && tenant.longitude != null
+                      ? { latitude: Number(tenant.latitude), longitude: Number(tenant.longitude) }
+                      : null
+                  }
+                />
+              </div>
+            </div>
           </section>
         )}
       </main>
