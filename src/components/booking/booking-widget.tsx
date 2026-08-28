@@ -22,8 +22,10 @@ import { toast } from "sonner";
 const VEHICLE_CATEGORIES = [
   { value: "City Car", label: "City Car - es. Fiat Panda o simile" },
   { value: "Berlina Compatta", label: "Berlina Compatta - es. Fiat Tipo o simile" },
-  { value: "SUV Compatto", label: "SUV Compatto - es. Jeep Renegade o simile" },
-  { value: "Monovolume", label: "Monovolume 7 posti - es. Fiat 500L o simile" },
+  { value: "Premium", label: "Premium - es. Audi A1, Mercedes Classe A" },
+  { value: "SUV Compatto", label: "SUV Compatto - es. Opel Mokka o simile" },
+  { value: "Monovolume", label: "Monovolume 7 posti - es. Peugeot 5008" },
+  { value: "Scooter", label: "Scooter - es. Aprilia Tweet 125" },
   { value: "Furgone", label: "Furgone - es. Fiat Ducato o simile" },
 ];
 
