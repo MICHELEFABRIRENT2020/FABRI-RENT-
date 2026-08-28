@@ -13,7 +13,7 @@ export async function SiteHeader() {
       <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-4">
         <Link href="/" className="inline-flex items-center">
           <span className="inline-flex items-center rounded-lg bg-white/95 px-3 py-1.5 shadow-sm ring-1 ring-black/5">
-            <Image src="/brand/logo.png" alt={tenant.name} width={609} height={128} priority className="h-7 w-auto sm:h-8" />
+            <Image src="/brand/logo.png" alt={tenant.name} width={1140} height={235} priority className="h-7 w-auto sm:h-8" />
           </span>
         </Link>
         <nav className="flex items-center gap-2">
