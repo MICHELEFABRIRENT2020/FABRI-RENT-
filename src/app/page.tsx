@@ -4,6 +4,7 @@ import { BookingWidget } from "@/components/booking/booking-widget";
 import { SiteHeader } from "@/components/site/site-header";
 import { SiteFooter } from "@/components/site/site-footer";
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { ShieldCheck, Clock, MapPin, Wallet, Car } from "lucide-react";
 import { getPublicTenant } from "@/lib/tenant";
 import { DirectionsCard } from "@/components/site/directions-card";
@@ -126,6 +127,64 @@ const SERVICES = [
   },
 ];
 
+/*
+ * Real 4-step booking journey, one step per verifiable stage the app
+ * actually implements: the Search Widget's own fields (rent/parking tabs,
+ * booking-widget.tsx), the representative-vehicle "o simile" pattern
+ * (/prenota/rent/page.tsx), the real 4-step checkout wizard (STEPS in
+ * rent-checkout-wizard.tsx: Assicurazione / Servizi Extra / Documenti e
+ * Fatturazione / Pagamento), and the real digital contract signature +
+ * in-person pickup (src/app/firma/[token]/page.tsx, SignatureFlow, plus
+ * the already-established pay/deposit-at-pickup fact). No invented
+ * timing, delivery method, or procedure.
+ */
+const HOW_IT_WORKS = [
+  {
+    index: "01",
+    title: "Cerca",
+    description: "Scegli data di ritiro/ingresso, riconsegna/uscita e categoria veicolo (o il servizio Parcheggio).",
+  },
+  {
+    index: "02",
+    title: "Scegli",
+    description: "Ti mostriamo il veicolo disponibile per la categoria scelta, sempre “o simile”.",
+  },
+  {
+    index: "03",
+    title: "Prenota",
+    description: "Selezioni assicurazione ed eventuali extra, carichi i documenti richiesti e confermi.",
+  },
+  {
+    index: "04",
+    title: "Ritira",
+    description: "Firmi il contratto e ritiri il veicolo in sede: saldo e cauzione si regolano lì al ritiro.",
+  },
+];
+
+/*
+ * Trust block - only facts independently verifiable in the codebase, no
+ * fabricated stats/reviews/badges. Digital signature: src/app/firma/[token]
+ * + signature-flow.tsx. Document check: DocumentUploader's 4 real slots
+ * (id card front/back, license front/back) in document-uploader.tsx.
+ * Payment methods: the real credit_card/debit_card radio in
+ * rent-checkout-wizard.tsx step 4. No VAT/PEC shown - the seed values for
+ * those are placeholders, not confirmed real business data.
+ */
+const TRUST = [
+  {
+    title: "Contratto firmato digitalmente",
+    description: "Ogni prenotazione si conferma con firma digitale del contratto, non a voce.",
+  },
+  {
+    title: "Documenti verificati",
+    description: "Carta d'identità e patente, fronte e retro, richiesti prima della conferma.",
+  },
+  {
+    title: "Pagamento tracciato",
+    description: "Carta di credito o debito: nessun contante, nessun accordo informale.",
+  },
+];
+
 export async function generateMetadata(): Promise<Metadata> {
   const tenant = await getPublicTenant();
   return { title: `${tenant.name} - Noleggio Auto & Parcheggio` };
@@ -139,7 +198,7 @@ export default async function Home() {
     <div className="storefront flex flex-1 flex-col bg-background text-foreground">
       <SiteHeader />
       <main className="flex flex-1 flex-col">
-        <section className="relative overflow-hidden px-4 py-16 sm:py-24">
+        <section id="ricerca" className="relative overflow-hidden px-4 py-16 sm:py-24">
           <div className="pointer-events-none absolute -top-24 right-1/2 h-72 w-72 translate-x-1/2 rounded-full bg-primary/10 blur-3xl sm:right-24 sm:translate-x-0" />
           <div className="mx-auto grid w-full max-w-6xl gap-10 lg:grid-cols-12 lg:items-stretch lg:gap-12">
             <div className="motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-4 motion-safe:duration-700 flex flex-col lg:col-span-7 lg:justify-between">
@@ -216,6 +275,36 @@ export default async function Home() {
                     </li>
                   ))}
                 </ul>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="mx-auto w-full max-w-6xl px-4 py-16">
+          <div className="mb-10 space-y-2 text-center">
+            <h2 className="text-3xl font-bold tracking-tight">Come funziona</h2>
+            <p className="text-muted-foreground">Dalla ricerca al ritiro, in quattro passaggi.</p>
+          </div>
+          <div className="grid gap-8 border-t border-border pt-10 sm:grid-cols-2 lg:grid-cols-4">
+            {HOW_IT_WORKS.map((step) => (
+              <div key={step.index} className="space-y-2">
+                <span className="text-sm font-bold text-primary">{step.index}</span>
+                <h3 className="text-lg font-semibold">{step.title}</h3>
+                <p className="text-sm text-muted-foreground">{step.description}</p>
+              </div>
+            ))}
+          </div>
+          <div className="mt-10 flex justify-center">
+            <Button asChild size="lg" className="premium-cta text-sm font-bold tracking-wide uppercase">
+              <a href="#ricerca">Cerca auto</a>
+            </Button>
+          </div>
+
+          <div className="mt-16 grid gap-8 border-t border-border pt-10 sm:grid-cols-3">
+            {TRUST.map((item) => (
+              <div key={item.title} className="space-y-1.5">
+                <h3 className="text-sm font-bold tracking-wide text-foreground uppercase">{item.title}</h3>
+                <p className="text-sm text-muted-foreground">{item.description}</p>
               </div>
             ))}
           </div>
