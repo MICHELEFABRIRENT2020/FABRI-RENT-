@@ -203,6 +203,41 @@
   }
 }
 
+/*
+ * Hero visual panel - CSS-only depth (perspective + tilt + layered shadow +
+ * light sweep) standing in for real fleet photography, which the repo does
+ * not have yet (see Step 5 report: ASSET DA FORNIRE). Uses the same honest
+ * icon-placeholder approach as VehicleCategoryIcon, scaled up for hero
+ * prominence. Swap the icon for a real <Image> once photography ships -
+ * the frame/panel/sheen classes and sizing can stay as-is.
+ */
+.hero-visual-frame {
+  perspective: 1600px;
+}
+.hero-visual-panel {
+  background:
+    radial-gradient(120% 120% at 30% 15%, color-mix(in oklch, var(--primary) 16%, transparent) 0%, transparent 55%),
+    linear-gradient(155deg, #1c1c1f 0%, #0d0d0e 65%, #050505 100%);
+  box-shadow:
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.06),
+    0 30px 70px -20px rgba(0, 0, 0, 0.65);
+  transform: rotateY(-6deg) rotateX(2deg);
+  transition: transform 0.5s ease;
+}
+.hero-visual-frame:hover .hero-visual-panel {
+  transform: rotateY(-3deg) rotateX(1deg);
+}
+.hero-visual-sheen {
+  position: absolute;
+  inset: -20% -60%;
+  background: linear-gradient(115deg, transparent 42%, rgba(255, 255, 255, 0.08) 50%, transparent 58%);
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-visual-panel {
+    transition: none;
+  }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

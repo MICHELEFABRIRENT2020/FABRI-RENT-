@@ -33,14 +33,14 @@ export function BookingWidget() {
   const router = useRouter();
 
   return (
-    <Card className="premium-panel w-full rounded-2xl border-white/10 bg-card/60 p-px backdrop-blur-md">
-      <CardContent className="rounded-[calc(1rem-1px)] pt-6">
-        <div className="premium-well mb-5 flex items-center gap-3 rounded-xl p-3">
+    <Card className="premium-panel w-full rounded-3xl border-white/10 bg-card/60 p-px backdrop-blur-md">
+      <CardContent className="rounded-[calc(1.5rem-1px)] p-5 sm:p-6">
+        <div className="premium-well mb-5 flex items-center gap-3 rounded-xl p-3.5">
           <MapPin className="size-4 shrink-0 text-primary" />
           <span className="text-sm font-medium">Ritiro e riconsegna presso Via Privata Detta Sacra 33</span>
         </div>
         <Tabs defaultValue="rent">
-          <TabsList className="premium-well grid h-11 w-full grid-cols-2 rounded-full p-1">
+          <TabsList className="premium-well grid h-12 w-full grid-cols-2 rounded-full p-1">
             <TabsTrigger
               value="rent"
               className="gap-2 rounded-full text-xs font-bold tracking-wide uppercase data-active:shadow-[0_0_8px_-3px_var(--primary)]"
@@ -101,7 +101,7 @@ function RentTab({ onSearch }: { onSearch: (params: Record<string, string>) => v
           value={start}
           onChange={(e) => setStart(e.target.value)}
           required
-          className="premium-well h-10"
+          className="premium-well h-11"
         />
       </div>
       <div className="space-y-2">
@@ -114,7 +114,7 @@ function RentTab({ onSearch }: { onSearch: (params: Record<string, string>) => v
           value={end}
           onChange={(e) => setEnd(e.target.value)}
           required
-          className="premium-well h-10"
+          className="premium-well h-11"
         />
       </div>
       <div className="space-y-2 sm:col-span-2">
@@ -122,7 +122,7 @@ function RentTab({ onSearch }: { onSearch: (params: Record<string, string>) => v
           Categoria veicolo
         </Label>
         <Select value={category} onValueChange={setCategory}>
-          <SelectTrigger id="rent-category" className="premium-well w-full">
+          <SelectTrigger id="rent-category" className="premium-well h-11 w-full">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -137,7 +137,7 @@ function RentTab({ onSearch }: { onSearch: (params: Record<string, string>) => v
       <Button
         type="submit"
         size="lg"
-        className="premium-cta text-sm font-bold tracking-wide uppercase transition-transform active:scale-[0.98] sm:col-span-2"
+        className="premium-cta h-12 text-sm font-bold tracking-wide uppercase transition-transform active:scale-[0.98] sm:col-span-2"
       >
         Cerca auto
       </Button>
@@ -174,7 +174,7 @@ function ParkingTab({ onSearch }: { onSearch: (params: Record<string, string>) =
           value={start}
           onChange={(e) => setStart(e.target.value)}
           required
-          className="premium-well h-10"
+          className="premium-well h-11"
         />
       </div>
       <div className="space-y-2">
@@ -187,7 +187,7 @@ function ParkingTab({ onSearch }: { onSearch: (params: Record<string, string>) =
           value={end}
           onChange={(e) => setEnd(e.target.value)}
           required
-          className="premium-well h-10"
+          className="premium-well h-11"
         />
       </div>
       <div className="space-y-2">
@@ -195,7 +195,7 @@ function ParkingTab({ onSearch }: { onSearch: (params: Record<string, string>) =
           Categoria
         </Label>
         <Select value={category} onValueChange={setCategory}>
-          <SelectTrigger id="park-category" className="premium-well w-full">
+          <SelectTrigger id="park-category" className="premium-well h-11 w-full">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -210,7 +210,7 @@ function ParkingTab({ onSearch }: { onSearch: (params: Record<string, string>) =
           Tipo posto
         </Label>
         <Select value={slotType} onValueChange={setSlotType}>
-          <SelectTrigger id="park-slot" className="premium-well w-full">
+          <SelectTrigger id="park-slot" className="premium-well h-11 w-full">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -228,7 +228,7 @@ function ParkingTab({ onSearch }: { onSearch: (params: Record<string, string>) =
       <Button
         type="submit"
         size="lg"
-        className="premium-cta text-sm font-bold tracking-wide uppercase transition-transform active:scale-[0.98] sm:col-span-2"
+        className="premium-cta h-12 text-sm font-bold tracking-wide uppercase transition-transform active:scale-[0.98] sm:col-span-2"
       >
         Verifica disponibilita&apos;
       </Button>

@@ -3,7 +3,7 @@ import { BookingWidget } from "@/components/booking/booking-widget";
 import { SiteHeader } from "@/components/site/site-header";
 import { SiteFooter } from "@/components/site/site-footer";
 import { Card, CardContent } from "@/components/ui/card";
-import { ShieldCheck, Clock, MapPin, Wallet } from "lucide-react";
+import { ShieldCheck, Clock, MapPin, Wallet, Car } from "lucide-react";
 import { getPublicTenant } from "@/lib/tenant";
 import { DirectionsCard } from "@/components/site/directions-card";
 
@@ -50,8 +50,8 @@ export default async function Home() {
       <main className="flex flex-1 flex-col">
         <section className="relative overflow-hidden px-4 py-16 sm:py-24">
           <div className="pointer-events-none absolute -top-24 right-1/2 h-72 w-72 translate-x-1/2 rounded-full bg-primary/10 blur-3xl sm:right-24 sm:translate-x-0" />
-          <div className="mx-auto grid w-full max-w-6xl items-center gap-12 lg:grid-cols-12">
-            <div className="space-y-6 lg:col-span-7">
+          <div className="mx-auto grid w-full max-w-6xl items-center gap-10 lg:grid-cols-12 lg:gap-12">
+            <div className="motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-4 motion-safe:duration-700 space-y-6 lg:col-span-7">
               <p className="inline-block rounded-full border border-border bg-secondary/50 px-4 py-1.5 text-xs font-medium tracking-wide text-muted-foreground">
                 {tenant.name}
               </p>
@@ -75,7 +75,13 @@ export default async function Home() {
                 ))}
               </div>
             </div>
-            <div className="lg:col-span-5">
+            <div className="motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-4 motion-safe:duration-700 motion-safe:delay-150 flex flex-col gap-6 lg:col-span-5">
+              <div className="hero-visual-frame hidden md:block" aria-hidden="true">
+                <div className="hero-visual-panel relative flex h-56 items-center justify-center overflow-hidden rounded-3xl border border-border lg:h-[420px]">
+                  <div className="hero-visual-sheen" />
+                  <Car className="relative size-24 text-primary/40 lg:size-32" strokeWidth={1} />
+                </div>
+              </div>
               <BookingWidget />
             </div>
           </div>
