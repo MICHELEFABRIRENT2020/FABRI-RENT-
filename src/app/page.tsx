@@ -7,6 +7,47 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ShieldCheck, Clock, MapPin, Wallet, Car } from "lucide-react";
 import { getPublicTenant } from "@/lib/tenant";
 import { DirectionsCard } from "@/components/site/directions-card";
+import { FleetShowcase, type ShowcaseVehicle } from "@/components/site/fleet-showcase";
+import { prisma } from "@/lib/prisma";
+
+// Homepage Fleet showcase: one real vehicle per category (cheapest first,
+// same ordering /api/vehicles and /flotta already use), capped at 6 so the
+// homepage stays a preview - not the full 48-vehicle catalog, which lives
+// at /flotta. Same data source (prisma.vehicle) and dedupe-by-name logic
+// as /flotta/page.tsx - no second source of truth.
+const FLEET_SHOWCASE_LIMIT = 6;
+
+async function getFleetShowcaseVehicles(tenantId: string): Promise<ShowcaseVehicle[]> {
+  const vehicles = await prisma.vehicle.findMany({
+    where: { tenantId, status: "available" },
+    orderBy: [{ category: "asc" }, { dailyRate: "asc" }, { name: "asc" }],
+    select: {
+      id: true,
+      name: true,
+      category: true,
+      dailyRate: true,
+      seats: true,
+      transmission: true,
+      fuelType: true,
+      imageUrl: true,
+      isOrSimilar: true,
+    },
+  });
+
+  const seenNames = new Set<string>();
+  const seenCategories = new Set<string>();
+  const showcase: ShowcaseVehicle[] = [];
+
+  for (const v of vehicles) {
+    if (seenNames.has(v.name) || seenCategories.has(v.category)) continue;
+    seenNames.add(v.name);
+    seenCategories.add(v.category);
+    showcase.push({ ...v, dailyRate: Number(v.dailyRate) });
+    if (showcase.length >= FLEET_SHOWCASE_LIMIT) break;
+  }
+
+  return showcase;
+}
 
 /*
  * Hero visual - no automotive photography exists in the repo yet (see the
@@ -59,6 +100,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function Home() {
   const tenant = await getPublicTenant();
+  const fleetShowcaseVehicles = await getFleetShowcaseVehicles(tenant.id);
 
   return (
     <div className="storefront flex flex-1 flex-col bg-background text-foreground">
@@ -117,6 +159,8 @@ export default async function Home() {
             </div>
           </div>
         </section>
+
+        <FleetShowcase vehicles={fleetShowcaseVehicles} fleetHref="/flotta" />
 
         <section className="mx-auto grid w-full max-w-6xl gap-4 px-4 py-16 sm:grid-cols-2 lg:grid-cols-4">
           {HIGHLIGHTS.map((item) => (
