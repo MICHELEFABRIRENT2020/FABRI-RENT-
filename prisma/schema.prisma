@@ -3,8 +3,14 @@
 // damages/claims, blacklist, fines, documents, cash register, notifications.
 
 generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  provider      = "prisma-client"
+  output        = "../src/generated/prisma"
+  // Vercel's build container (Debian) and its serverless runtime (Amazon
+  // Linux, rhel-openssl-3.0.x) are different platforms, so the query engine
+  // built for "native" during `npm run build` isn't the one the deployed
+  // function actually runs on - confirmed by the runtime error naming
+  // rhel-openssl-3.0.x as missing. Generate both explicitly.
+  binaryTargets = ["native", "rhel-openssl-3.0.x"]
 }
 
 datasource db {
