@@ -332,6 +332,15 @@ model Tenant {
   pec       String?
   sdiCode   String?  @map("sdi_code")
   address   String?
+  // Canonical public business contact data (section 13B) - single source of
+  // truth read by every customer-facing surface (Header, Footer, homepage
+  // Contact section) via getPublicTenant(). A plain string for
+  // openingHours (e.g. "09:30-20:00") rather than a structured per-day
+  // schedule, since that's the only shape of data provided.
+  phone        String?
+  mobilePhone  String? @map("mobile_phone")
+  email        String?
+  openingHours String? @map("opening_hours")
   // Google Geocoding (section 3) - populated by src/lib/maps.ts when
   // GOOGLE_MAPS_API_KEY is configured and the address is saved; null
   // otherwise ("Come raggiungerci" then falls back to a plain Maps search

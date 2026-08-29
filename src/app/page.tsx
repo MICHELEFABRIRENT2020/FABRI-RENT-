@@ -5,7 +5,7 @@ import { SiteHeader } from "@/components/site/site-header";
 import { SiteFooter } from "@/components/site/site-footer";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ShieldCheck, Clock, MapPin, Wallet, Car } from "lucide-react";
+import { ShieldCheck, Clock, MapPin, Wallet, Car, Phone, Smartphone, Mail } from "lucide-react";
 import { getPublicTenant } from "@/lib/tenant";
 import { DirectionsCard } from "@/components/site/directions-card";
 import { FleetShowcase, type ShowcaseVehicle } from "@/components/site/fleet-showcase";
@@ -334,6 +334,50 @@ export default async function Home() {
                   <Button asChild size="lg" className="premium-cta text-sm font-bold tracking-wide uppercase">
                     <a href="#ricerca">Cerca auto</a>
                   </Button>
+
+                  {(tenant.phone || tenant.mobilePhone || tenant.email || tenant.openingHours) && (
+                    <ul className="space-y-2 border-t border-border pt-5 text-sm">
+                      {tenant.phone && (
+                        <li>
+                          <a
+                            href={`tel:${tenant.phone}`}
+                            className="inline-flex items-center gap-2 text-foreground/90 hover:text-primary"
+                            aria-label={`Chiama il numero fisso ${tenant.phone}`}
+                          >
+                            <Phone className="size-4 shrink-0 text-primary" /> {tenant.phone}
+                          </a>
+                        </li>
+                      )}
+                      {tenant.mobilePhone && (
+                        <li>
+                          <a
+                            href={`tel:${tenant.mobilePhone}`}
+                            className="inline-flex items-center gap-2 text-foreground/90 hover:text-primary"
+                            aria-label={`Chiama il cellulare ${tenant.mobilePhone}`}
+                          >
+                            <Smartphone className="size-4 shrink-0 text-primary" /> {tenant.mobilePhone}
+                          </a>
+                        </li>
+                      )}
+                      {tenant.email && (
+                        <li>
+                          <a
+                            href={`mailto:${tenant.email}`}
+                            className="inline-flex items-center gap-2 text-foreground/90 hover:text-primary"
+                            aria-label={`Scrivi a ${tenant.email}`}
+                          >
+                            <Mail className="size-4 shrink-0 text-primary" /> {tenant.email}
+                          </a>
+                        </li>
+                      )}
+                      {tenant.openingHours && (
+                        <li className="inline-flex items-center gap-2 text-muted-foreground">
+                          <Clock className="size-4 shrink-0" /> Orari: {tenant.openingHours}
+                        </li>
+                      )}
+                    </ul>
+                  )}
+                  {tenant.pec && <p className="text-xs text-muted-foreground">PEC: {tenant.pec}</p>}
                 </div>
                 <DirectionsCard
                   address={tenant.address}
