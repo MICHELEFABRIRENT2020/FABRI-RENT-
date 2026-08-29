@@ -247,6 +247,13 @@ export default async function Home() {
                   <div className="pointer-events-none absolute inset-0" />
                 </div>
               </div>
+              <p className="flex items-center gap-2 text-sm text-foreground/90">
+                <span className="size-1.5 shrink-0 rounded-full bg-primary" aria-hidden="true" />
+                <span>
+                  <span className="font-semibold text-foreground">Prenota online.</span> Nessuna telefonata
+                  necessaria.
+                </span>
+              </p>
               <BookingWidget />
             </div>
           </div>
