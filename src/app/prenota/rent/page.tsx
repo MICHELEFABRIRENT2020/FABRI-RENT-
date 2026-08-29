@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { computeVehiclePrice } from "@/lib/pricing-engine";
 import { getPublicTenant } from "@/lib/tenant";
@@ -8,6 +8,7 @@ import { StorefrontShell } from "@/components/site/storefront-shell";
 import { RentCheckoutWizard } from "@/components/booking/rent-checkout-wizard";
 import { VehicleCategoryIcon } from "@/components/booking/vehicle-category-icon";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 
 export default async function RentBookingPage({
   searchParams,
@@ -17,7 +18,23 @@ export default async function RentBookingPage({
   const { start, end, category } = await searchParams;
 
   if (!start || !end || !category) {
-    notFound();
+    return (
+      <StorefrontShell>
+        <SiteHeader />
+        <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-16">
+          <Alert>
+            <AlertTitle>Ricerca incompleta</AlertTitle>
+            <AlertDescription>
+              Mancano data di ritiro, data di riconsegna o categoria veicolo per procedere con la prenotazione.
+            </AlertDescription>
+          </Alert>
+          <Button asChild className="mt-4">
+            <Link href="/flotta">Torna alla flotta</Link>
+          </Button>
+        </main>
+        <SiteFooter />
+      </StorefrontShell>
+    );
   }
 
   const startDate = new Date(start);
@@ -30,8 +47,14 @@ export default async function RentBookingPage({
         <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-16">
           <Alert variant="destructive">
             <AlertTitle>Date non valide</AlertTitle>
-            <AlertDescription>Torna alla home e seleziona nuovamente ritiro e riconsegna.</AlertDescription>
+            <AlertDescription>
+              Le date di ritiro e riconsegna selezionate non sono corrette. Scegli nuovamente il tuo veicolo dalla
+              flotta.
+            </AlertDescription>
           </Alert>
+          <Button asChild className="mt-4">
+            <Link href="/flotta">Torna alla flotta</Link>
+          </Button>
         </main>
         <SiteFooter />
       </StorefrontShell>
@@ -53,9 +76,12 @@ export default async function RentBookingPage({
             <AlertTitle>Categoria non disponibile</AlertTitle>
             <AlertDescription>
               Al momento non ci sono veicoli disponibili nella categoria selezionata. Prova con un&apos;altra
-              categoria o altre date.
+              categoria dalla flotta.
             </AlertDescription>
           </Alert>
+          <Button asChild className="mt-4">
+            <Link href="/flotta">Torna alla flotta</Link>
+          </Button>
         </main>
         <SiteFooter />
       </StorefrontShell>
