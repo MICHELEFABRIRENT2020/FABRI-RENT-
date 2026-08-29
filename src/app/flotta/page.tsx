@@ -10,7 +10,12 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: `Flotta - ${tenant.name}` };
 }
 
-export default async function FleetPage() {
+export default async function FleetPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ category?: string; start?: string; end?: string }>;
+}) {
+  const { category: initialCategory, start: initialStart, end: initialEnd } = await searchParams;
   const tenant = await getPublicTenant();
 
   const vehicles = await prisma.vehicle.findMany({
@@ -42,7 +47,13 @@ export default async function FleetPage() {
             {catalog.length} modelli disponibili presso {tenant.name}. Scegli data, categoria e prenota.
           </p>
         </div>
-        <FleetCatalog vehicles={catalog} categories={categories} />
+        <FleetCatalog
+          vehicles={catalog}
+          categories={categories}
+          initialCategory={initialCategory}
+          initialStart={initialStart}
+          initialEnd={initialEnd}
+        />
       </main>
       <SiteFooter />
     </div>

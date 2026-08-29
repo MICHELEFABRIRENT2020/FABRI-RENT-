@@ -24,12 +24,26 @@ export type CatalogVehicle = {
 
 const ALL = "__all__";
 
-export function FleetCatalog({ vehicles, categories }: { vehicles: CatalogVehicle[]; categories: string[] }) {
+export function FleetCatalog({
+  vehicles,
+  categories,
+  initialCategory,
+  initialStart,
+  initialEnd,
+}: {
+  vehicles: CatalogVehicle[];
+  categories: string[];
+  initialCategory?: string;
+  initialStart?: string;
+  initialEnd?: string;
+}) {
   const router = useRouter();
 
-  const [start, setStart] = useState(defaultPickupValue());
-  const [end, setEnd] = useState(defaultReturnValue());
-  const [category, setCategory] = useState(ALL);
+  const [start, setStart] = useState(initialStart || defaultPickupValue());
+  const [end, setEnd] = useState(initialEnd || defaultReturnValue());
+  const [category, setCategory] = useState(
+    initialCategory && categories.includes(initialCategory) ? initialCategory : ALL
+  );
   const [transmission, setTransmission] = useState(ALL);
   const [fuelType, setFuelType] = useState(ALL);
 

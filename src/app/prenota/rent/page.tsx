@@ -88,6 +88,17 @@ export default async function RentBookingPage({
     );
   }
 
+  // Same category/status shape as the `representative` lookup above, grouped by model
+  // name to tell the customer how many real alternatives exist - no new booking logic.
+  const availableModels = await prisma.vehicle.groupBy({
+    by: ["name"],
+    where: { tenantId: tenant.id, category, status: "available" },
+  });
+  const modelCount = availableModels.length;
+  const flottaHref = `/flotta?category=${encodeURIComponent(category)}&start=${encodeURIComponent(
+    start
+  )}&end=${encodeURIComponent(end)}`;
+
   const { days, total } = await computeVehiclePrice({
     tenantId: tenant.id,
     vehicleId: representative.id,
@@ -99,10 +110,30 @@ export default async function RentBookingPage({
     <StorefrontShell>
       <SiteHeader />
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-10">
-        <div className="mb-6 flex items-center gap-4">
+        <div className="mb-2 flex items-center gap-4">
           <VehicleCategoryIcon category={category} className="size-16 shrink-0" iconClassName="size-8" />
-          <h1 className="text-2xl font-bold">Prenota: {representative.name} o simile</h1>
+          <div>
+            <h1 className="text-2xl font-bold">Prenota: {representative.name} o simile</h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Categoria <span className="font-medium text-foreground">{category}</span>
+              {modelCount > 1 ? (
+                <>
+                  {" "}
+                  &middot;{" "}
+                  <Link href={flottaHref} className="text-primary underline underline-offset-2 hover:text-primary/80">
+                    vedi tutti i {modelCount} modelli disponibili in questa categoria
+                  </Link>
+                </>
+              ) : (
+                <> &middot; unico modello attualmente disponibile in questa categoria</>
+              )}
+            </p>
+          </div>
         </div>
+        <p className="mb-6 text-xs text-muted-foreground">
+          Il veicolo assegnato verra&apos; confermato in base alla disponibilita&apos; al momento del ritiro, tra i
+          modelli di questa categoria.
+        </p>
         <RentCheckoutWizard
           vehicleCategory={category}
           vehicleName={representative.name}
