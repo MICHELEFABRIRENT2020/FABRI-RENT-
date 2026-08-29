@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import { getPublicTenant } from "@/lib/tenant";
+import { resolvePricingMultiplier } from "@/lib/pricing-engine";
 import { SiteHeader } from "@/components/site/site-header";
 import { SiteFooter } from "@/components/site/site-footer";
 import { FleetCatalog, type CatalogVehicle } from "@/components/booking/fleet-catalog";
@@ -33,6 +34,35 @@ export default async function FleetPage({
     if (seen.has(v.name)) continue;
     seen.add(v.name);
     catalog.push({ ...v, dailyRate: Number(v.dailyRate) });
+  }
+
+  // When real search dates are known, apply the same pricing rules the checkout
+  // uses (resolvePricingMultiplier - the same function computeVehiclePrice calls
+  // for /prenota/rent) so the catalog price matches what will actually be charged.
+  // One lookup per distinct category, not per vehicle, to reuse the existing rule
+  // engine without duplicating it or querying per-card.
+  const startDate = initialStart ? new Date(initialStart) : null;
+  const endDate = initialEnd ? new Date(initialEnd) : null;
+  const datesKnown =
+    startDate && endDate && !Number.isNaN(startDate.getTime()) && !Number.isNaN(endDate.getTime()) && endDate > startDate;
+
+  if (datesKnown) {
+    const categoriesInCatalog = Array.from(new Set(catalog.map((v) => v.category)));
+    const pricingByCategory = new Map<string, { multiplier: number; fixedRate: number | null }>();
+    for (const category of categoriesInCatalog) {
+      const { multiplier, fixedRate } = await resolvePricingMultiplier({
+        tenantId: tenant.id,
+        scope: "rent",
+        category,
+        startDate,
+        endDate,
+      });
+      pricingByCategory.set(category, { multiplier, fixedRate });
+    }
+    for (const vehicle of catalog) {
+      const pricing = pricingByCategory.get(vehicle.category);
+      if (pricing) vehicle.dailyRate = pricing.fixedRate ?? vehicle.dailyRate * pricing.multiplier;
+    }
   }
 
   const categories = Array.from(new Set(catalog.map((v) => v.category)));
