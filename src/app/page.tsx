@@ -198,12 +198,12 @@ export default async function Home() {
     <div className="storefront flex flex-1 flex-col bg-background text-foreground">
       <SiteHeader />
       <main className="flex flex-1 flex-col">
-        <section id="ricerca" className="relative overflow-hidden px-4 py-16 sm:py-24">
+        <section id="ricerca" className="relative overflow-hidden px-4 py-10 sm:py-24">
           <div className="pointer-events-none absolute -top-24 right-1/2 h-72 w-72 translate-x-1/2 rounded-full bg-primary/10 blur-3xl sm:right-24 sm:translate-x-0" />
           <div className="mx-auto grid w-full max-w-6xl gap-10 lg:grid-cols-12 lg:items-stretch lg:gap-12">
             <div className="motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-4 motion-safe:duration-700 flex flex-col lg:col-span-7 lg:justify-between">
               <div className="space-y-6">
-                <h1 className="text-balance text-5xl font-extrabold leading-none tracking-tight lg:text-7xl">
+                <h1 className="text-balance text-4xl font-extrabold leading-none tracking-tight sm:text-5xl lg:text-7xl">
                   Guidare l&apos;eccellenza.
                   <br />
                   <span className="bg-gradient-to-br from-foreground to-primary bg-clip-text text-transparent">
