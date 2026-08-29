@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { prisma } from "@/lib/prisma";
+import { findAvailableVehiclesInCategory } from "@/lib/fleet-engine";
 import { computeVehiclePrice } from "@/lib/pricing-engine";
 import { getPublicTenant } from "@/lib/tenant";
 import { SiteHeader } from "@/components/site/site-header";
@@ -62,19 +62,23 @@ export default async function RentBookingPage({
   }
 
   const tenant = await getPublicTenant();
+  // Single source of truth for "what's really available for these dates": the same
+  // date-aware check used by createBooking()/assignVehicleForBooking() at submission
+  // time, so the preview can never show a vehicle/count the final confirmation would
+  // reject. No new availability rules - just reusing the existing one here too.
+  const availableVehicles = await findAvailableVehiclesInCategory({
+    tenantId: tenant.id,
+    category,
+    startDate,
+    endDate,
+  });
+
   // If the customer picked a specific model on /flotta, prefer that exact model when
-  // still available - same query shape as the fallback below, just scoped by name.
-  // Falls back silently to the previous cheapest-in-category behavior otherwise.
+  // still available; otherwise fall back to the cheapest of the real candidates -
+  // same "o simile" semantics as before, now scoped to real availability.
   const representative =
-    (model &&
-      (await prisma.vehicle.findFirst({
-        where: { tenantId: tenant.id, category, name: model, status: "available" },
-        orderBy: { dailyRate: "asc" },
-      }))) ||
-    (await prisma.vehicle.findFirst({
-      where: { tenantId: tenant.id, category, status: "available" },
-      orderBy: { dailyRate: "asc" },
-    }));
+    (model && availableVehicles.find((v) => v.name === model)) ||
+    [...availableVehicles].sort((a, b) => Number(a.dailyRate) - Number(b.dailyRate))[0];
 
   if (!representative) {
     return (
@@ -97,13 +101,9 @@ export default async function RentBookingPage({
     );
   }
 
-  // Same category/status shape as the `representative` lookup above, grouped by model
-  // name to tell the customer how many real alternatives exist - no new booking logic.
-  const availableModels = await prisma.vehicle.groupBy({
-    by: ["name"],
-    where: { tenantId: tenant.id, category, status: "available" },
-  });
-  const modelCount = availableModels.length;
+  // Derived from the same date-aware candidates above - no separate query, and no
+  // risk of claiming more (or fewer) real alternatives than actually exist for these dates.
+  const modelCount = new Set(availableVehicles.map((v) => v.name)).size;
   const flottaHref = `/flotta?category=${encodeURIComponent(category)}&start=${encodeURIComponent(
     start
   )}&end=${encodeURIComponent(end)}`;
