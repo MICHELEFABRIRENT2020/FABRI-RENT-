@@ -2,10 +2,12 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
@@ -42,6 +44,8 @@ export function RentCheckoutWizard({
   const [insurance, setInsurance] = useState<InsuranceOptionDto | null>(null);
   const [extraSelection, setExtraSelection] = useState<ExtraSelection[]>([]);
   const [documents, setDocuments] = useState<Partial<Record<DocumentSlotKey, string>>>({});
+  const [documentsConsent, setDocumentsConsent] = useState(false);
+  const [documentsConsentAt, setDocumentsConsentAt] = useState<string | null>(null);
   const [invoice, setInvoice] = useState<InvoiceFormValues>({
     fullName: "",
     email: "",
@@ -146,6 +150,35 @@ export function RentCheckoutWizard({
                 <Separator />
                 <div>
                   <h4 className="mb-3 text-sm font-semibold">Documenti di identita&apos; (4 file)</h4>
+                  <label className="mb-3 flex items-start gap-3 rounded-md border p-3 text-sm has-data-checked:border-primary has-data-checked:bg-primary/5">
+                    <Checkbox
+                      id="documents-consent"
+                      checked={documentsConsent}
+                      onCheckedChange={(v) => {
+                        const checked = v === true;
+                        setDocumentsConsent(checked);
+                        setDocumentsConsentAt(checked ? new Date().toISOString() : null);
+                      }}
+                      className="mt-0.5"
+                    />
+                    <span className="font-normal text-muted-foreground">
+                      Ho letto l&apos;
+                      <Link
+                        href="/privacy"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary underline underline-offset-2 hover:text-primary/80"
+                      >
+                        informativa privacy
+                      </Link>{" "}
+                      relativa al trattamento dei miei dati e dei documenti caricati.
+                    </span>
+                  </label>
+                  {!documentsConsent && (
+                    <p className="mb-3 text-xs text-muted-foreground">
+                      Accetta l&apos;informativa privacy per poter caricare i documenti.
+                    </p>
+                  )}
                   <DocumentUploader
                     values={documents}
                     onChange={(key, url) => setDocuments((d) => ({ ...d, [key]: url }))}
@@ -155,6 +188,8 @@ export function RentCheckoutWizard({
                         fullName: prev.fullName || [fields.firstName, fields.lastName].filter(Boolean).join(" "),
                       }))
                     }
+                    consentGiven={documentsConsent}
+                    consentTimestamp={documentsConsentAt}
                   />
                 </div>
               </div>

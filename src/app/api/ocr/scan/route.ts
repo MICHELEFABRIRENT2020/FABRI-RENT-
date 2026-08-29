@@ -23,6 +23,11 @@ const VALID_KINDS = new Set<ScannedDocumentKind>([
   "generic",
 ]);
 
+// Personal-identity documents (customer booking flow only, via DocumentUploader) require
+// the explicit privacy consent checked before the upload is attempted - see Step 25.
+// Other kinds (e.g. "libretto" from the admin vehicle-document-scanner) are unaffected.
+const PERSONAL_DOCUMENT_KINDS = new Set<ScannedDocumentKind>(["id_card", "driver_license"]);
+
 export async function POST(req: NextRequest) {
   const ip = clientIp(req.headers);
   const limit = await rateLimit("ocr", ip, RATE_LIMITS.fileUpload);
@@ -37,6 +42,9 @@ export async function POST(req: NextRequest) {
 
   if (!(file instanceof File)) {
     return NextResponse.json({ error: "File mancante" }, { status: 400 });
+  }
+  if (PERSONAL_DOCUMENT_KINDS.has(kind) && formData.get("consent") !== "true") {
+    return NextResponse.json({ error: "Consenso al trattamento dei documenti non fornito." }, { status: 400 });
   }
   if (!ALLOWED_TYPES.has(file.type)) {
     return NextResponse.json({ error: "Formato non supportato (JPG, PNG, WebP, PDF)" }, { status: 415 });
@@ -58,6 +66,15 @@ export async function POST(req: NextRequest) {
   let tenantId = session?.user?.tenantId ?? null;
   if (!tenantId) tenantId = (await getPublicTenant()).id;
 
+  // Minimal, schema-free persistence of the privacy consent declaration (Step 25):
+  // reuses the existing free-text `notes` field rather than adding new columns.
+  // See Step 25 report for what a proper, queryable consent record would need.
+  const consentAtRaw = formData.get("consentAt");
+  const consentAt = typeof consentAtRaw === "string" ? consentAtRaw : null;
+  const consentNote = PERSONAL_DOCUMENT_KINDS.has(kind)
+    ? `Consenso privacy dichiarato dall'utente il ${consentAt ?? new Date().toISOString()}`
+    : undefined;
+
   const doc = await prisma.document.create({
     data: {
       tenantId,
@@ -68,6 +85,7 @@ export async function POST(req: NextRequest) {
       fileType: file.type,
       ocrData: JSON.parse(JSON.stringify(ocrResult.ok ? ocrResult.fields : { error: ocrResult.reason })),
       uploadedById: session?.user?.id,
+      notes: consentNote,
     },
   });
 
