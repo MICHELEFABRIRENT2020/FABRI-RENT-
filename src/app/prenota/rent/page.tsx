@@ -13,9 +13,9 @@ import { Button } from "@/components/ui/button";
 export default async function RentBookingPage({
   searchParams,
 }: {
-  searchParams: Promise<{ start?: string; end?: string; category?: string }>;
+  searchParams: Promise<{ start?: string; end?: string; category?: string; model?: string }>;
 }) {
-  const { start, end, category } = await searchParams;
+  const { start, end, category, model } = await searchParams;
 
   if (!start || !end || !category) {
     return (
@@ -62,10 +62,19 @@ export default async function RentBookingPage({
   }
 
   const tenant = await getPublicTenant();
-  const representative = await prisma.vehicle.findFirst({
-    where: { tenantId: tenant.id, category, status: "available" },
-    orderBy: { dailyRate: "asc" },
-  });
+  // If the customer picked a specific model on /flotta, prefer that exact model when
+  // still available - same query shape as the fallback below, just scoped by name.
+  // Falls back silently to the previous cheapest-in-category behavior otherwise.
+  const representative =
+    (model &&
+      (await prisma.vehicle.findFirst({
+        where: { tenantId: tenant.id, category, name: model, status: "available" },
+        orderBy: { dailyRate: "asc" },
+      }))) ||
+    (await prisma.vehicle.findFirst({
+      where: { tenantId: tenant.id, category, status: "available" },
+      orderBy: { dailyRate: "asc" },
+    }));
 
   if (!representative) {
     return (

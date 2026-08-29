@@ -67,8 +67,8 @@ export function FleetCatalog({
     [vehicles, category, transmission, fuelType]
   );
 
-  function bookCategory(vehicleCategory: string) {
-    const qs = new URLSearchParams({ start, end, category: vehicleCategory });
+  function bookCategory(vehicleCategory: string, vehicleName: string) {
+    const qs = new URLSearchParams({ start, end, category: vehicleCategory, model: vehicleName });
     router.push(`/prenota/rent?${qs.toString()}`);
   }
 
@@ -173,7 +173,7 @@ export function FleetCatalog({
                       <span className="text-xs font-normal text-muted-foreground">/giorno</span>
                     </p>
                   </div>
-                  <Button className="h-11" onClick={() => bookCategory(v.category)}>
+                  <Button className="h-11" onClick={() => bookCategory(v.category, v.name)}>
                     Prenota
                   </Button>
                 </div>
