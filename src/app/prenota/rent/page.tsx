@@ -28,7 +28,7 @@ export default async function RentBookingPage({
               Mancano data di ritiro, data di riconsegna o categoria veicolo per procedere con la prenotazione.
             </AlertDescription>
           </Alert>
-          <Button asChild className="mt-4">
+          <Button asChild className="mt-4 h-11">
             <Link href="/flotta">Torna alla flotta</Link>
           </Button>
         </main>
@@ -52,7 +52,7 @@ export default async function RentBookingPage({
               flotta.
             </AlertDescription>
           </Alert>
-          <Button asChild className="mt-4">
+          <Button asChild className="mt-4 h-11">
             <Link href="/flotta">Torna alla flotta</Link>
           </Button>
         </main>
@@ -79,7 +79,7 @@ export default async function RentBookingPage({
               categoria dalla flotta.
             </AlertDescription>
           </Alert>
-          <Button asChild className="mt-4">
+          <Button asChild className="mt-4 h-11">
             <Link href="/flotta">Torna alla flotta</Link>
           </Button>
         </main>

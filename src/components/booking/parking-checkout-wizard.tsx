@@ -204,13 +204,20 @@ export function ParkingCheckoutWizard({
             )}
 
             <div className="flex justify-between pt-2">
-              <Button variant="outline" onClick={() => setStep((s) => Math.max(0, s - 1))} disabled={step === 0}>
+              <Button
+                variant="outline"
+                className="h-11"
+                onClick={() => setStep((s) => Math.max(0, s - 1))}
+                disabled={step === 0}
+              >
                 Indietro
               </Button>
               {step < STEPS.length - 1 ? (
-                <Button onClick={() => setStep((s) => s + 1)}>Avanti</Button>
+                <Button className="h-11" onClick={() => setStep((s) => s + 1)}>
+                  Avanti
+                </Button>
               ) : (
-                <Button onClick={handleConfirm} disabled={submitting}>
+                <Button className="h-11" onClick={handleConfirm} disabled={submitting}>
                   {submitting ? "Attendere..." : "Conferma prenotazione"}
                 </Button>
               )}

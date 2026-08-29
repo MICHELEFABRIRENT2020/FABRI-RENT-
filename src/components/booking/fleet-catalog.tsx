@@ -173,7 +173,9 @@ export function FleetCatalog({
                       <span className="text-xs font-normal text-muted-foreground">/giorno</span>
                     </p>
                   </div>
-                  <Button onClick={() => bookCategory(v.category)}>Prenota</Button>
+                  <Button className="h-11" onClick={() => bookCategory(v.category)}>
+                    Prenota
+                  </Button>
                 </div>
               </CardContent>
             </Card>
