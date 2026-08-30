@@ -17,8 +17,19 @@ import { InvoiceForm, type InvoiceFormValues } from "@/components/booking/invoic
 import { useExtraServices, computeExtrasTotalPreview } from "@/lib/hooks/use-extra-services";
 import { formatItalianDate } from "@/lib/rental-time";
 import type { ParkingCategory, ParkingSlotType } from "@/generated/prisma/client";
+import { customerSchema } from "@/lib/validation/booking";
 
 const STEPS = ["Servizi Extra", "Documenti e Fatturazione", "Pagamento"] as const;
+
+// Same schema (and messages) the server uses to validate these fields - a client-side
+// gate for UX, not a second source of truth. The server remains authoritative.
+const requiredCustomerFields = customerSchema.pick({ fullName: true, email: true, phone: true });
+
+function firstInvalidInvoiceMessage(invoice: InvoiceFormValues): string | null {
+  const result = requiredCustomerFields.safeParse(invoice);
+  if (result.success) return null;
+  return result.error.issues.map((issue) => issue.message).join(" ");
+}
 
 const CATEGORY_LABEL: Record<ParkingCategory, string> = { moto: "Moto", auto: "Auto", furgone: "Furgone" };
 const SLOT_LABEL: Record<ParkingSlotType, string> = { coperto: "Coperto", scoperto: "Scoperto" };
@@ -66,6 +77,11 @@ export function ParkingCheckoutWizard({
   const totalPreview = basePrice + extrasPreview;
 
   async function handleConfirm() {
+    const invoiceError = firstInvalidInvoiceMessage(invoice);
+    if (invoiceError) {
+      setError(invoiceError);
+      return;
+    }
     setSubmitting(true);
     setError(null);
     try {
@@ -85,7 +101,13 @@ export function ParkingCheckoutWizard({
         }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Errore nella creazione della prenotazione");
+      if (!res.ok) {
+        const message =
+          Array.isArray(data.issues) && data.issues.length > 0
+            ? data.issues.map((issue: { message: string }) => issue.message).join(" ")
+            : (data.error ?? "Errore nella creazione della prenotazione");
+        throw new Error(message);
+      }
       setBooking({ bookingId: data.bookingId });
       toast.success("Prenotazione confermata!");
       router.push(`/prenotazioni/${data.bookingId}`);
@@ -213,7 +235,20 @@ export function ParkingCheckoutWizard({
                 Indietro
               </Button>
               {step < STEPS.length - 1 ? (
-                <Button className="h-11" onClick={() => setStep((s) => s + 1)}>
+                <Button
+                  className="h-11"
+                  onClick={() => {
+                    if (step === 1) {
+                      const invoiceError = firstInvalidInvoiceMessage(invoice);
+                      if (invoiceError) {
+                        setError(invoiceError);
+                        return;
+                      }
+                    }
+                    setError(null);
+                    setStep((s) => s + 1);
+                  }}
+                >
                   Avanti
                 </Button>
               ) : (

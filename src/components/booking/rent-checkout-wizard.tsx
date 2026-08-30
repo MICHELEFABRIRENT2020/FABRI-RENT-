@@ -19,8 +19,19 @@ import { useExtraServices, computeExtrasTotalPreview } from "@/lib/hooks/use-ext
 import { formatItalianDate } from "@/lib/rental-time";
 import { isKasko } from "@/lib/insurance-zone";
 import { VehicleCategoryIcon } from "@/components/booking/vehicle-category-icon";
+import { customerSchema } from "@/lib/validation/booking";
 
 const STEPS = ["Assicurazione", "Servizi Extra", "Documenti e Fatturazione", "Pagamento"] as const;
+
+// Same schema (and messages) the server uses to validate these fields - a client-side
+// gate for UX, not a second source of truth. The server remains authoritative.
+const requiredCustomerFields = customerSchema.pick({ fullName: true, email: true, phone: true });
+
+function firstInvalidInvoiceMessage(invoice: InvoiceFormValues): string | null {
+  const result = requiredCustomerFields.safeParse(invoice);
+  if (result.success) return null;
+  return result.error.issues.map((issue) => issue.message).join(" ");
+}
 
 export function RentCheckoutWizard({
   vehicleCategory,
@@ -69,6 +80,11 @@ export function RentCheckoutWizard({
       setError("Seleziona un'opzione assicurativa per proseguire.");
       return;
     }
+    const invoiceError = firstInvalidInvoiceMessage(invoice);
+    if (invoiceError) {
+      setError(invoiceError);
+      return;
+    }
     setSubmitting(true);
     setError(null);
     try {
@@ -87,7 +103,13 @@ export function RentCheckoutWizard({
         }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Errore nella creazione della prenotazione");
+      if (!res.ok) {
+        const message =
+          Array.isArray(data.issues) && data.issues.length > 0
+            ? data.issues.map((issue: { message: string }) => issue.message).join(" ")
+            : (data.error ?? "Errore nella creazione della prenotazione");
+        throw new Error(message);
+      }
       setBooking({ bookingId: data.bookingId });
       toast.success("Prenotazione confermata!");
       router.push(`/prenotazioni/${data.bookingId}`);
@@ -237,6 +259,13 @@ export function RentCheckoutWizard({
                     if (step === 0 && !insurance) {
                       setError("Seleziona un'opzione assicurativa per proseguire.");
                       return;
+                    }
+                    if (step === 2) {
+                      const invoiceError = firstInvalidInvoiceMessage(invoice);
+                      if (invoiceError) {
+                        setError(invoiceError);
+                        return;
+                      }
                     }
                     setError(null);
                     setStep((s) => s + 1);
