@@ -159,6 +159,116 @@
 }
 
 /*
+ * FABRI/OS design tokens (Step 38, token layer only).
+ *
+ * Additive and inert: --background, --card, --border etc. above are
+ * completely untouched, and nothing in the codebase reads these new
+ * variables yet - introducing this layer changes zero visual behavior.
+ * Component migration (wiring surfaces/type/motion into real markup)
+ * happens page-by-page in later, dedicated steps.
+ *
+ * Deliberately small - 4 grays, 9 spacing steps, 3 radius roles, 3
+ * elevation levels, 8 type steps, 2 motion durations/easings, one new
+ * semantic color. No per-component tokens here (see FABRI/OS spec,
+ * sections 02-03).
+ */
+.storefront {
+  /* Surface primitives - 4-step gray scale (Base -> Surface -> Elevated -> Strong) */
+  --gray-base: #0b0b0b;
+  --gray-surface: #111111;
+  --gray-elevated: #171717;
+  --gray-strong: #202020;
+
+  /* Surface semantic roles - not yet wired into --background/--card/--border */
+  --surface-base: var(--gray-base);
+  --surface-panel: var(--gray-surface);
+  --surface-elevated: var(--gray-elevated);
+  --surface-strong: var(--gray-strong);
+
+  /* Spacing scale - 8px base */
+  --space-2xs: 4px;
+  --space-xs: 8px;
+  --space-sm: 12px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-2xl: 48px;
+  --space-3xl: 64px;
+  --space-4xl: 96px;
+
+  /* Radius roles - map onto the radius primitives already in @theme inline, no new values */
+  --radius-control: var(--radius-sm);
+  --radius-panel: var(--radius-xl);
+  --radius-pill: 999px;
+
+  /* Elevation - 3 levels, same restrained language as .premium-panel below (never a glow/neon accent) */
+  --elevation-flat: none;
+  --elevation-raised:
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.06), 0 8px 24px -8px rgba(0, 0, 0, 0.5);
+  --elevation-floating:
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.06), 0 20px 60px -12px rgba(0, 0, 0, 0.55);
+
+  /* Typography scale - same Geist family already loaded, no font change */
+  --type-display-size: 4.5rem;
+  --type-display-weight: 800;
+  --type-display-tracking: -0.02em;
+  --type-display-leading: 1;
+
+  --type-h1-size: 2.25rem;
+  --type-h1-weight: 700;
+  --type-h1-tracking: -0.02em;
+  --type-h1-leading: 1.15;
+
+  --type-h2-size: 1.5rem;
+  --type-h2-weight: 700;
+  --type-h2-leading: 1.25;
+
+  --type-h3-size: 1.125rem;
+  --type-h3-weight: 600;
+  --type-h3-leading: 1.3;
+
+  --type-body-size: 1rem;
+  --type-body-weight: 400;
+  --type-body-leading: 1.6;
+
+  --type-label-size: 0.75rem;
+  --type-label-weight: 700;
+  --type-label-tracking: 0.06em;
+
+  --type-meta-size: 0.8125rem;
+  --type-meta-weight: 500;
+
+  --type-price-size: 1.375rem;
+  --type-price-weight: 900;
+
+  /* Motion - 2 durations, 2 easings, consumed only via motion-safe: (Step 39+) */
+  --motion-fast: 200ms;
+  --motion-slow: 600ms;
+  --motion-ease-standard: cubic-bezier(0.22, 1, 0.36, 1);
+  --motion-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /*
+   * Semantic state colors. --state-available is the only new hue in this
+   * architecture - reserved strictly for a real, system-confirmed
+   * availability status (Step 34's date-aware check), never decorative.
+   * --primary (#ff5f00) stays the only accent used for actions/active
+   * states; green must never compete with it. unavailable/pending stay
+   * neutral (mixes of existing --muted-foreground/--foreground, no new
+   * hue) rather than red, per explicit direction. error reuses the
+   * existing --destructive token (already used by form validation,
+   * Step 37) rather than introducing a new color. warning has no real
+   * use case anywhere in the product yet, so it stays aliased to a
+   * neutral placeholder - a real warning color should only be added
+   * when a genuine warning state exists to justify it.
+   */
+  --state-available: #22c55e;
+  --state-unavailable: var(--muted-foreground);
+  --state-pending: color-mix(in srgb, var(--muted-foreground) 70%, var(--foreground));
+  --state-error: var(--destructive);
+  --state-warning: var(--muted-foreground);
+}
+
+/*
  * Premium-automotive panel treatment for the storefront's hero booking
  * widget - restrained glass depth, no neon glow, no continuous
  * animation. Driven by the theme tokens above (--primary, --border,
