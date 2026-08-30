@@ -15,14 +15,39 @@ import { Gauge, Fuel, Users } from "lucide-react";
 export type CatalogVehicle = {
   id: string;
   name: string;
+  brand: string | null;
+  model: string | null;
+  isOrSimilar: boolean;
   category: string;
   dailyRate: number;
   seats: number | null;
   transmission: string | null;
   fuelType: string | null;
+  // null = dates not known yet, no availability claim made; "available"/
+  // "unavailable" are only ever set from a real findAvailableVehiclesInCategory
+  // result (see flotta/page.tsx) - never a static/decorative flag.
+  availability: "available" | "unavailable" | null;
 };
 
 const ALL = "__all__";
+
+function AvailabilityIndicator({ status }: { status: CatalogVehicle["availability"] }) {
+  if (status === null) return null;
+  const isAvailable = status === "available";
+  return (
+    <span
+      className={`flex items-center gap-1.5 text-xs font-medium ${
+        isAvailable ? "text-[var(--state-available)]" : "text-[var(--state-unavailable)]"
+      }`}
+    >
+      <span
+        className={`size-1.5 shrink-0 rounded-full ${isAvailable ? "bg-[var(--state-available)]" : "bg-[var(--state-unavailable)]"}`}
+        aria-hidden="true"
+      />
+      {isAvailable ? "Disponibile" : "Non disponibile per queste date"}
+    </span>
+  );
+}
 
 export function FleetCatalog({
   vehicles,
@@ -74,7 +99,7 @@ export function FleetCatalog({
 
   return (
     <div className="space-y-8">
-      <Card className="border-border bg-card/70 backdrop-blur">
+      <Card className="fleet-card backdrop-blur">
         <CardContent className="grid gap-4 pt-6 sm:grid-cols-2 lg:grid-cols-5">
           <div className="space-y-2">
             <Label htmlFor="fleet-start">Ritiro</Label>
@@ -142,16 +167,25 @@ export function FleetCatalog({
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((v) => (
-            <Card key={v.id} className="flex flex-col border-border bg-card/70 backdrop-blur">
+            <Card
+              key={v.id}
+              className="fleet-card flex flex-col backdrop-blur transition-[transform,box-shadow] motion-safe:duration-[var(--motion-fast)] motion-safe:hover:-translate-y-0.5 motion-safe:hover:shadow-[var(--elevation-floating)]"
+            >
               <CardContent className="flex flex-1 flex-col gap-4 pt-6">
                 <div className="flex items-start justify-between gap-2">
                   <Badge variant="secondary">{v.category}</Badge>
-                  <Badge variant="outline">O SIMILE</Badge>
+                  <AvailabilityIndicator status={v.availability} />
                 </div>
 
                 <VehicleCategoryIcon category={v.category} className="h-32 w-full" iconClassName="size-12" />
 
-                <h3 className="font-semibold leading-tight">{v.name}</h3>
+                <div className="space-y-0.5">
+                  {v.brand && (
+                    <p className="text-xs font-bold tracking-wider text-muted-foreground uppercase">{v.brand}</p>
+                  )}
+                  <h3 className="text-lg leading-tight font-semibold">{v.model ?? v.name}</h3>
+                  {v.isOrSimilar && <p className="text-xs text-muted-foreground">o simile</p>}
+                </div>
 
                 <div className="grid grid-cols-3 gap-2 rounded-lg bg-muted p-3 text-xs text-muted-foreground">
                   <span className="flex items-center gap-1">
@@ -168,7 +202,7 @@ export function FleetCatalog({
                 <div className="mt-auto flex items-center justify-between pt-2">
                   <div>
                     <p className="text-xs text-muted-foreground">Da</p>
-                    <p className="text-xl font-bold text-primary">
+                    <p className="text-xl leading-tight font-black tabular-nums text-primary">
                       {v.dailyRate.toFixed(0)}&euro;{" "}
                       <span className="text-xs font-normal text-muted-foreground">/giorno</span>
                     </p>

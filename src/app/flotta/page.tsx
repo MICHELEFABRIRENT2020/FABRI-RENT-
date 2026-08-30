@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import { getPublicTenant } from "@/lib/tenant";
 import { resolvePricingMultiplier } from "@/lib/pricing-engine";
+import { findAvailableVehiclesInCategory } from "@/lib/fleet-engine";
 import { SiteHeader } from "@/components/site/site-header";
 import { SiteFooter } from "@/components/site/site-footer";
 import { FleetCatalog, type CatalogVehicle } from "@/components/booking/fleet-catalog";
@@ -22,7 +23,18 @@ export default async function FleetPage({
   const vehicles = await prisma.vehicle.findMany({
     where: { tenantId: tenant.id, status: "available" },
     orderBy: [{ category: "asc" }, { dailyRate: "asc" }, { name: "asc" }],
-    select: { id: true, name: true, category: true, dailyRate: true, seats: true, transmission: true, fuelType: true },
+    select: {
+      id: true,
+      name: true,
+      brand: true,
+      model: true,
+      isOrSimilar: true,
+      category: true,
+      dailyRate: true,
+      seats: true,
+      transmission: true,
+      fuelType: true,
+    },
   });
 
   // One card per distinct model ("o simile" already covers the rest of the
@@ -33,7 +45,7 @@ export default async function FleetPage({
   for (const v of vehicles) {
     if (seen.has(v.name)) continue;
     seen.add(v.name);
-    catalog.push({ ...v, dailyRate: Number(v.dailyRate) });
+    catalog.push({ ...v, dailyRate: Number(v.dailyRate), availability: null });
   }
 
   // When real search dates are known, apply the same pricing rules the checkout
@@ -49,19 +61,23 @@ export default async function FleetPage({
   if (datesKnown) {
     const categoriesInCatalog = Array.from(new Set(catalog.map((v) => v.category)));
     const pricingByCategory = new Map<string, { multiplier: number; fixedRate: number | null }>();
+    // Same date-aware check createBooking()/prenota-rent already use (Step 34) -
+    // reused here, not duplicated, so a card's "Disponibile" state means the
+    // same thing the booking flow will actually verify, not a static status flag.
+    const availableNamesByCategory = new Map<string, Set<string>>();
     for (const category of categoriesInCatalog) {
-      const { multiplier, fixedRate } = await resolvePricingMultiplier({
-        tenantId: tenant.id,
-        scope: "rent",
-        category,
-        startDate,
-        endDate,
-      });
+      const [{ multiplier, fixedRate }, availableVehicles] = await Promise.all([
+        resolvePricingMultiplier({ tenantId: tenant.id, scope: "rent", category, startDate, endDate }),
+        findAvailableVehiclesInCategory({ tenantId: tenant.id, category, startDate, endDate }),
+      ]);
       pricingByCategory.set(category, { multiplier, fixedRate });
+      availableNamesByCategory.set(category, new Set(availableVehicles.map((v) => v.name)));
     }
     for (const vehicle of catalog) {
       const pricing = pricingByCategory.get(vehicle.category);
       if (pricing) vehicle.dailyRate = pricing.fixedRate ?? vehicle.dailyRate * pricing.multiplier;
+      const availableNames = availableNamesByCategory.get(vehicle.category);
+      vehicle.availability = availableNames?.has(vehicle.name) ? "available" : "unavailable";
     }
   }
 
