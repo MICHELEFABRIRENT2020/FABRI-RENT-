@@ -9,7 +9,7 @@ export async function SiteHeader() {
   const [session, tenant] = await Promise.all([auth(), getPublicTenant()]);
 
   return (
-    <header className="sticky top-0 z-20 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+    <header className="header-chrome sticky top-0 z-20 backdrop-blur">
       <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-4">
         <Link href="/" className="inline-flex items-center">
           <span className="inline-flex items-center rounded-lg bg-white/95 px-3 py-1.5 shadow-sm ring-1 ring-black/5">
@@ -17,7 +17,10 @@ export async function SiteHeader() {
           </span>
         </Link>
         <nav className="flex items-center gap-4">
-          <Link href="/flotta" className="text-sm font-medium text-muted-foreground hover:text-foreground">
+          <Link
+            href="/flotta"
+            className="text-xs font-bold tracking-wider text-muted-foreground uppercase transition-colors hover:text-primary"
+          >
             Flotta
           </Link>
           {session?.user ? (

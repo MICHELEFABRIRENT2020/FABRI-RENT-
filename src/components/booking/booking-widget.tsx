@@ -34,8 +34,8 @@ export function BookingWidget() {
 
   return (
     <Card className="premium-panel w-full rounded-3xl border-white/10 bg-card/60 p-px backdrop-blur-md">
-      <CardContent className="rounded-[calc(1.5rem-1px)] p-5 sm:p-6">
-        <div className="premium-well mb-5 flex items-center gap-3 rounded-xl p-3.5">
+      <CardContent className="rounded-[calc(1.5rem-1px)] p-6">
+        <div className="premium-well mb-4 flex items-center gap-3 rounded-xl p-4">
           <MapPin className="size-4 shrink-0 text-primary" />
           <span className="text-sm font-medium">Ritiro e riconsegna presso Via Privata Detta Sacra 33</span>
         </div>
@@ -43,13 +43,13 @@ export function BookingWidget() {
           <TabsList className="premium-well grid h-12 w-full grid-cols-2 rounded-full p-1">
             <TabsTrigger
               value="rent"
-              className="gap-1.5 rounded-full text-[11px] font-bold tracking-wide uppercase data-active:shadow-[0_0_8px_-3px_var(--primary)] sm:gap-2 sm:text-xs"
+              className="gap-1.5 rounded-full text-xs font-bold tracking-wider uppercase data-active:shadow-[0_0_8px_-3px_var(--primary)] sm:gap-2"
             >
               <Car className="size-4 shrink-0" /> Noleggio Auto
             </TabsTrigger>
             <TabsTrigger
               value="parking"
-              className="gap-1.5 rounded-full text-[11px] font-bold tracking-wide uppercase data-active:shadow-[0_0_8px_-3px_var(--primary)] sm:gap-2 sm:text-xs"
+              className="gap-1.5 rounded-full text-xs font-bold tracking-wider uppercase data-active:shadow-[0_0_8px_-3px_var(--primary)] sm:gap-2"
             >
               <ParkingCircle className="size-4 shrink-0" />
               <span className="sm:hidden">Parcheggio</span>

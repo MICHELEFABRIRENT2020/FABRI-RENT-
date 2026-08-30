@@ -198,10 +198,9 @@ export default async function Home() {
     <div className="storefront flex flex-1 flex-col bg-background text-foreground">
       <SiteHeader />
       <main className="flex flex-1 flex-col">
-        <section id="ricerca" className="relative overflow-hidden px-4 py-10 sm:py-24">
-          <div className="pointer-events-none absolute -top-24 right-1/2 h-72 w-72 translate-x-1/2 rounded-full bg-primary/10 blur-3xl sm:right-24 sm:translate-x-0" />
-          <div className="mx-auto grid w-full max-w-6xl gap-10 lg:grid-cols-12 lg:items-stretch lg:gap-12">
-            <div className="motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-4 motion-safe:duration-700 flex flex-col lg:col-span-7 lg:justify-between">
+        <section id="ricerca" className="hero-stage relative overflow-hidden px-4 py-8 sm:py-24">
+          <div className="mx-auto grid w-full max-w-6xl gap-12 lg:grid-cols-12 lg:items-stretch">
+            <div className="motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-4 motion-safe:duration-[var(--motion-slow)] flex flex-col lg:col-span-7 lg:justify-between">
               <div className="space-y-6">
                 <h1 className="text-balance text-4xl font-extrabold leading-none tracking-tight sm:text-5xl lg:text-7xl">
                   Guidare l&apos;eccellenza.
@@ -210,21 +209,21 @@ export default async function Home() {
                     Senza compromessi.
                   </span>
                 </h1>
-                <p className="max-w-xl text-pretty text-lg leading-relaxed text-muted-foreground">
+                <p className="max-w-xl text-pretty text-base leading-relaxed text-muted-foreground">
                   Dalle city car piu&apos; agili ai SUV, prenota in pochi click il tuo veicolo o il tuo
                   posto auto presso la nostra sede{tenant.address ? ` di ${tenant.address}` : ""}.
                 </p>
               </div>
-              <div className="mt-10 grid grid-cols-3 gap-4 border-t border-border pt-6 lg:mt-0">
+              <div className="mt-8 grid grid-cols-3 gap-4 border-t border-border pt-6 lg:mt-0">
                 {STATS.map((stat) => (
                   <div key={stat.label}>
-                    <div className="text-2xl font-bold text-foreground">{stat.value}</div>
-                    <div className="text-xs font-semibold uppercase text-muted-foreground">{stat.label}</div>
+                    <div className="text-2xl leading-tight font-bold tabular-nums text-foreground">{stat.value}</div>
+                    <div className="text-xs font-bold tracking-wider text-muted-foreground uppercase">{stat.label}</div>
                   </div>
                 ))}
               </div>
             </div>
-            <div className="motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-4 motion-safe:duration-700 motion-safe:delay-150 flex flex-col gap-6 lg:col-span-5">
+            <div className="motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-4 motion-safe:duration-[var(--motion-slow)] motion-safe:delay-[var(--motion-fast)] flex flex-col gap-6 lg:col-span-5">
               <div className="hero-visual-frame hidden md:block" aria-hidden="true">
                 <div className="hero-visual-panel relative aspect-[3/4] w-full overflow-hidden rounded-3xl border border-border md:aspect-video lg:aspect-square">
                   {HERO_IMAGE_SRC ? (
@@ -247,7 +246,7 @@ export default async function Home() {
                   <div className="pointer-events-none absolute inset-0" />
                 </div>
               </div>
-              <p className="flex items-center gap-2 text-sm text-foreground/90">
+              <p className="flex items-center gap-2 text-xs font-medium text-foreground/90">
                 <span className="size-1.5 shrink-0 rounded-full bg-primary" aria-hidden="true" />
                 <span>
                   <span className="font-semibold text-foreground">Prenota online.</span> Nessuna telefonata

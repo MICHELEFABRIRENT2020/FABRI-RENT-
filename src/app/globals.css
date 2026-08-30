@@ -198,7 +198,7 @@
 
   /* Radius roles - map onto the radius primitives already in @theme inline, no new values */
   --radius-control: var(--radius-sm);
-  --radius-panel: var(--radius-xl);
+  --radius-panel: var(--radius-3xl);
   --radius-pill: 999px;
 
   /* Elevation - 3 levels, same restrained language as .premium-panel below (never a glow/neon accent) */
@@ -233,13 +233,24 @@
 
   --type-label-size: 0.75rem;
   --type-label-weight: 700;
-  --type-label-tracking: 0.06em;
+  --type-label-tracking: 0.05em; /* = Tailwind's tracking-wider, so LABEL is expressible in pure utility classes */
 
-  --type-meta-size: 0.8125rem;
+  --type-meta-size: 0.75rem; /* = text-xs, same size as LABEL - differentiated by weight/case, not a separate size step */
   --type-meta-weight: 500;
 
   --type-price-size: 1.375rem;
   --type-price-weight: 900;
+
+  /*
+   * type.stat (Step 39B) - a hero metric number (e.g. "100%", "< 5 min")
+   * is functionally distinct from a heading or a price, but composed
+   * entirely from values already in this scale - no new raw numbers.
+   * The caption under a stat number stays type.label, applied separately
+   * where the stat is used; this token governs only the number itself.
+   */
+  --type-stat-size: var(--type-h2-size);
+  --type-stat-weight: var(--type-h1-weight);
+  --type-stat-leading: var(--type-h2-leading);
 
   /* Motion - 2 durations, 2 easings, consumed only via motion-safe: (Step 39+) */
   --motion-fast: 200ms;
@@ -282,13 +293,12 @@
  * automotive - sophisticated > flashy, restraint over decoration.
  */
 .premium-panel {
-  box-shadow:
-    inset 0 1px 0 0 rgba(255, 255, 255, 0.06),
-    0 20px 60px -12px rgba(0, 0, 0, 0.55);
+  box-shadow: var(--elevation-floating);
 }
 .premium-well {
   background: var(--muted);
   border: 1px solid var(--border);
+  border-radius: var(--radius-control);
   box-shadow: inset 0 1px 3px 0 rgba(0, 0, 0, 0.35);
   transition: border-color 0.2s ease;
 }
@@ -314,6 +324,45 @@
 }
 
 /*
+ * Header surface (Step 39C) - the FABRI/OS surface/elevation tokens applied
+ * to the sticky nav bar, replacing the hard `border-b` + raw
+ * `bg-background/95` it had before. A translucent tint of --surface-panel
+ * (kept semi-transparent so backdrop-blur still reads) plus --elevation-raised
+ * for a soft hairline instead of a flat rule - same restrained language as
+ * .premium-panel above, applied to a full-width bar instead of a floating
+ * panel.
+ */
+.header-chrome {
+  background: color-mix(in srgb, var(--surface-panel) 92%, transparent);
+  box-shadow: var(--elevation-raised);
+}
+
+/*
+ * Hero stage (Step 39C) - replaces the single 10%-opacity accent blur with
+ * two layers built entirely from already-approved tokens: --primary (the
+ * same accent the old blur used, just restructured) and the gray surface
+ * scale (--gray-elevated/--gray-base). No new colors. Pure background
+ * (::before, no height of its own), so it renders identically at every
+ * breakpoint without pushing content below it further down - mobile
+ * inherits the same depth as desktop for free, unlike the desktop-only
+ * 3D visual panel.
+ */
+.hero-stage {
+  position: relative;
+  isolation: isolate;
+}
+.hero-stage::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 60% 55% at 88% -10%, color-mix(in srgb, var(--primary) 15%, transparent), transparent 70%),
+    linear-gradient(180deg, var(--gray-elevated) 0%, var(--gray-base) 55%);
+}
+
+/*
  * Hero visual panel - CSS-only depth (perspective + tilt + soft shadow)
  * standing in for real fleet photography, which the repo does not have yet
  * (see Step 5/7 reports: ASSET DA FORNIRE). Uses the same honest
@@ -330,11 +379,9 @@
 }
 .hero-visual-panel {
   background: linear-gradient(160deg, #1c1c1f 0%, #0d0d0e 60%, #050505 100%);
-  box-shadow:
-    inset 0 1px 0 0 rgba(255, 255, 255, 0.05),
-    0 24px 60px -18px rgba(0, 0, 0, 0.6);
+  box-shadow: var(--elevation-floating);
   transform: rotateY(-6deg) rotateX(2deg);
-  transition: transform 0.5s ease;
+  transition: transform var(--motion-slow) var(--motion-ease-standard);
 }
 .hero-visual-frame:hover .hero-visual-panel {
   transform: rotateY(-3deg) rotateX(1deg);
