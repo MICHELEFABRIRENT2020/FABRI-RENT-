@@ -3,7 +3,7 @@ export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
 import { checkParkingAvailability } from "@/lib/parking-engine";
-import { computeParkingPrice } from "@/lib/pricing-engine";
+import { computeParkingPrice, ParkingPricingNotConfiguredError } from "@/lib/pricing-engine";
 import { getPublicTenant } from "@/lib/tenant";
 import type { ParkingCategory, ParkingSlotType } from "@/generated/prisma/client";
 
@@ -22,10 +22,16 @@ export async function GET(req: NextRequest) {
   const endDate = new Date(end);
   const tenant = await getPublicTenant();
 
-  const [availability, price] = await Promise.all([
-    checkParkingAvailability({ tenantId: tenant.id, slotType, startDate, endDate }),
-    computeParkingPrice({ tenantId: tenant.id, category, slotType, startDate, endDate }),
-  ]);
-
-  return NextResponse.json({ ...availability, ...price });
+  try {
+    const [availability, price] = await Promise.all([
+      checkParkingAvailability({ tenantId: tenant.id, slotType, startDate, endDate }),
+      computeParkingPrice({ tenantId: tenant.id, category, slotType, startDate, endDate }),
+    ]);
+    return NextResponse.json({ ...availability, ...price });
+  } catch (error) {
+    if (error instanceof ParkingPricingNotConfiguredError) {
+      return NextResponse.json({ error: error.message, code: error.code }, { status: 503 });
+    }
+    throw error;
+  }
 }

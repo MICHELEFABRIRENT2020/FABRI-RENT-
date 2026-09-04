@@ -4,6 +4,7 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { createBookingSchema } from "@/lib/validation/booking";
 import { createBooking, BookingConflictError } from "@/lib/booking-service";
+import { ParkingPricingNotConfiguredError } from "@/lib/pricing-engine";
 import { getPublicTenant } from "@/lib/tenant";
 import { rateLimit, RATE_LIMITS, clientIp } from "@/lib/rate-limit";
 import { logger } from "@/lib/logger";
@@ -36,6 +37,9 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     if (error instanceof BookingConflictError) {
       return NextResponse.json({ error: error.message }, { status: 409 });
+    }
+    if (error instanceof ParkingPricingNotConfiguredError) {
+      return NextResponse.json({ error: error.message, code: error.code }, { status: 503 });
     }
     logger.error({ err: error }, "[bookings:POST] unexpected error creating booking");
     return NextResponse.json({ error: "Errore durante la creazione della prenotazione" }, { status: 500 });

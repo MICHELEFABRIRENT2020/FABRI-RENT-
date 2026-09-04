@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { checkParkingAvailability } from "@/lib/parking-engine";
-import { computeParkingPrice } from "@/lib/pricing-engine";
+import { computeParkingPrice, ParkingPricingNotConfiguredError } from "@/lib/pricing-engine";
 import { getPublicTenant } from "@/lib/tenant";
 import { SiteHeader } from "@/components/site/site-header";
 import { SiteFooter } from "@/components/site/site-footer";
@@ -45,10 +45,31 @@ export default async function ParkingBookingPage({
   const parkingSlotType = slotType as ParkingSlotType;
   const tenant = await getPublicTenant();
 
-  const [availability, price] = await Promise.all([
-    checkParkingAvailability({ tenantId: tenant.id, slotType: parkingSlotType, startDate, endDate }),
-    computeParkingPrice({ tenantId: tenant.id, category: parkingCategory, slotType: parkingSlotType, startDate, endDate }),
-  ]);
+  let availability, price;
+  try {
+    [availability, price] = await Promise.all([
+      checkParkingAvailability({ tenantId: tenant.id, slotType: parkingSlotType, startDate, endDate }),
+      computeParkingPrice({ tenantId: tenant.id, category: parkingCategory, slotType: parkingSlotType, startDate, endDate }),
+    ]);
+  } catch (error) {
+    if (error instanceof ParkingPricingNotConfiguredError) {
+      return (
+        <StorefrontShell>
+          <SiteHeader />
+          <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-16">
+            <Alert variant="destructive">
+              <AlertTitle>Servizio non ancora disponibile</AlertTitle>
+              <AlertDescription>
+                Il parcheggio per la categoria {parkingCategory} non e&apos; ancora configurato. Contattaci direttamente per procedere.
+              </AlertDescription>
+            </Alert>
+          </main>
+          <SiteFooter />
+        </StorefrontShell>
+      );
+    }
+    throw error;
+  }
 
   if (!availability.available) {
     return (

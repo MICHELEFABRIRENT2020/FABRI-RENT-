@@ -1,6 +1,19 @@
 import { prisma } from "@/lib/prisma";
 import { computeBillableDays } from "@/lib/rental-time";
-import type { ParkingCategory, ParkingSlotType, PricingScope } from "@/generated/prisma/client";
+import { Prisma, type ParkingCategory, type ParkingSlotType, type PricingScope } from "@/generated/prisma/client";
+
+/**
+ * Thrown when a tenant has no ParkingBaseRate configured for the requested
+ * category - a setup/onboarding gap, not a system error. `code` is a stable
+ * identifier callers can branch on without parsing `message`.
+ */
+export class ParkingPricingNotConfiguredError extends Error {
+  readonly code = "PARKING_PRICING_NOT_CONFIGURED" as const;
+  constructor(public readonly category: ParkingCategory) {
+    super(`Nessuna tariffa Parcheggio configurata per la categoria "${category}".`);
+    this.name = "ParkingPricingNotConfiguredError";
+  }
+}
 
 /**
  * Resolves the best-matching dynamic pricing rule (super admin governance:
@@ -80,9 +93,17 @@ export async function computeParkingPrice(params: {
   startDate: Date;
   endDate: Date;
 }): Promise<{ days: number; dailyRate: number; total: number; ruleName: string | null }> {
-  const baseRate = await prisma.parkingBaseRate.findUniqueOrThrow({
-    where: { tenantId_category: { tenantId: params.tenantId, category: params.category } },
-  });
+  let baseRate;
+  try {
+    baseRate = await prisma.parkingBaseRate.findUniqueOrThrow({
+      where: { tenantId_category: { tenantId: params.tenantId, category: params.category } },
+    });
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") {
+      throw new ParkingPricingNotConfiguredError(params.category);
+    }
+    throw error;
+  }
   const days = computeBillableDays(params.startDate, params.endDate);
 
   const { multiplier, fixedRate, ruleName } = await resolvePricingMultiplier({
