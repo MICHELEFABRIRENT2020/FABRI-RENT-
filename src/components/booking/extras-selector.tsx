@@ -40,7 +40,10 @@ export function ExtrasSelector({
       {extras.map((extra) => {
         const current = selected.find((s) => s.extraServiceId === extra.id);
         return (
-          <div key={extra.id} className="flex items-center justify-between gap-3 rounded-md border p-3">
+          <div
+            key={extra.id}
+            className="radio-card flex items-center justify-between gap-3 border p-3 has-data-checked:border-primary has-data-checked:bg-primary/5"
+          >
             <div className="flex items-center gap-3">
               <Checkbox
                 id={`extra-${extra.id}`}

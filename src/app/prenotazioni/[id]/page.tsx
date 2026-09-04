@@ -22,46 +22,46 @@ export default async function BookingConfirmationPage({ params }: { params: Prom
     <StorefrontShell>
       <SiteHeader />
       <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-16">
-        <Card>
+        <Card className="surface-panel shadow-[var(--elevation-floating)]">
           <CardHeader className="items-center text-center">
-            <CheckCircle2 className="mb-2 size-12 text-primary" />
-            <CardTitle className="text-2xl">Prenotazione confermata</CardTitle>
-            <p className="text-sm text-muted-foreground">Riferimento: {booking.id}</p>
+            <CheckCircle2 className="mb-2 size-12 text-primary motion-safe:animate-in motion-safe:zoom-in motion-safe:fade-in motion-safe:duration-[var(--motion-slow)] motion-safe:ease-[var(--motion-ease-spring)]" />
+            <CardTitle className="text-4xl leading-tight font-bold tracking-tight">Prenotazione confermata</CardTitle>
+            <p className="text-xs font-medium text-muted-foreground">Riferimento: {booking.id}</p>
           </CardHeader>
           <CardContent className="space-y-3 text-sm">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Servizio</span>
-              <span>{booking.serviceType === "rent" ? "Noleggio Auto" : "Parcheggio (Parking Go)"}</span>
+            <div className="flex justify-between text-xs font-medium text-muted-foreground">
+              <span>Servizio</span>
+              <span className="text-foreground">{booking.serviceType === "rent" ? "Noleggio Auto" : "Parcheggio (Parking Go)"}</span>
             </div>
             {booking.vehicle && (
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Veicolo</span>
-                <span>{booking.vehicle.name} o simile</span>
+              <div className="flex justify-between text-xs font-medium text-muted-foreground">
+                <span>Veicolo</span>
+                <span className="text-foreground">{booking.vehicle.name} o simile</span>
               </div>
             )}
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Ritiro / Ingresso</span>
-              <span>{formatItalianDate(booking.startDate)}</span>
+            <div className="flex justify-between text-xs font-medium text-muted-foreground">
+              <span>Ritiro / Ingresso</span>
+              <span className="text-foreground">{formatItalianDate(booking.startDate)}</span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Riconsegna / Uscita</span>
-              <span>{formatItalianDate(booking.endDate)}</span>
+            <div className="flex justify-between text-xs font-medium text-muted-foreground">
+              <span>Riconsegna / Uscita</span>
+              <span className="text-foreground">{formatItalianDate(booking.endDate)}</span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Sede</span>
-              <span>{booking.location}</span>
+            <div className="flex justify-between text-xs font-medium text-muted-foreground">
+              <span>Sede</span>
+              <span className="text-foreground">{booking.location}</span>
             </div>
             <Separator />
             {booking.insuranceOption && (
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Assicurazione</span>
-                <span>{booking.insuranceOption.label}</span>
+              <div className="flex justify-between text-xs font-medium text-muted-foreground">
+                <span>Assicurazione</span>
+                <span className="text-foreground">{booking.insuranceOption.label}</span>
               </div>
             )}
             {booking.extras.length > 0 && (
-              <div>
-                <p className="text-muted-foreground">Servizi extra</p>
-                <ul className="ml-4 list-disc">
+              <div className="text-xs font-medium text-muted-foreground">
+                <p>Servizi extra</p>
+                <ul className="ml-4 list-disc text-foreground">
                   {booking.extras.map((e) => (
                     <li key={e.id}>
                       {e.extraService.label} x{e.quantity}
@@ -71,12 +71,12 @@ export default async function BookingConfirmationPage({ params }: { params: Prom
               </div>
             )}
             <Separator />
-            <div className="flex justify-between font-semibold">
-              <span>Totale</span>
-              <span>EUR {Number(booking.totalPrice).toFixed(2)}</span>
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-semibold">Totale</span>
+              <span className="text-xl font-black tabular-nums text-primary">EUR {Number(booking.totalPrice).toFixed(2)}</span>
             </div>
             {booking.hasDeposit && (
-              <div className="flex justify-between text-muted-foreground">
+              <div className="flex justify-between text-xs font-medium text-muted-foreground">
                 <span>Cauzione trattenuta (pre-autorizzata)</span>
                 <span>EUR {Number(booking.depositAmount).toFixed(2)}</span>
               </div>

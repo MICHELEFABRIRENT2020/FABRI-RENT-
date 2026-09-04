@@ -99,7 +99,7 @@ export function FleetCatalog({
 
   return (
     <div className="space-y-8">
-      <Card className="fleet-card backdrop-blur">
+      <Card className="surface-panel backdrop-blur">
         <CardContent className="grid gap-4 pt-6 sm:grid-cols-2 lg:grid-cols-5">
           <div className="space-y-2">
             <Label htmlFor="fleet-start">Ritiro</Label>
@@ -169,7 +169,7 @@ export function FleetCatalog({
           {filtered.map((v) => (
             <Card
               key={v.id}
-              className="fleet-card flex flex-col backdrop-blur transition-[transform,box-shadow] motion-safe:duration-[var(--motion-fast)] motion-safe:hover:-translate-y-0.5 motion-safe:hover:shadow-[var(--elevation-floating)]"
+              className="surface-panel flex flex-col backdrop-blur transition-[transform,box-shadow] motion-safe:duration-[var(--motion-fast)] motion-safe:hover:-translate-y-0.5 motion-safe:hover:shadow-[var(--elevation-floating)]"
             >
               <CardContent className="flex flex-1 flex-col gap-4 pt-6">
                 <div className="flex items-start justify-between gap-2">

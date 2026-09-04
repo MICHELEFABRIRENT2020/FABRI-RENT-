@@ -11,6 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
+import { Check } from "lucide-react";
 import { ExtrasSelector, type ExtraSelection } from "@/components/booking/extras-selector";
 import { DocumentUploader, type DocumentSlotKey } from "@/components/booking/document-uploader";
 import { InvoiceForm, type InvoiceFormValues } from "@/components/booking/invoice-form";
@@ -136,23 +137,35 @@ export function ParkingCheckoutWizard({
   return (
     <div className="grid gap-6 lg:grid-cols-3">
       <div className="lg:col-span-2">
-        <Card>
+        <Card className="surface-panel">
           <CardHeader>
-            <div className="flex flex-wrap gap-2">
-              {STEPS.map((label, i) => (
-                <span
-                  key={label}
-                  className={`rounded-full px-3 py-1 text-xs font-medium ${
-                    i === step ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
-                  }`}
-                >
-                  {i + 1}. {label}
-                </span>
-              ))}
+            <div className="space-y-3">
+              <div className="flex flex-wrap gap-2">
+                {STEPS.map((label, i) => {
+                  const completed = i < step;
+                  const active = i === step;
+                  return (
+                    <span
+                      key={label}
+                      className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-colors motion-safe:duration-[var(--motion-fast)] ${
+                        active || completed ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                      }`}
+                    >
+                      {completed ? <Check className="size-3" aria-hidden="true" /> : `${i + 1}.`} {label}
+                    </span>
+                  );
+                })}
+              </div>
+              <div className="h-1 w-full overflow-hidden rounded-full bg-muted">
+                <div
+                  className="h-full rounded-full bg-primary transition-[width] motion-safe:duration-[var(--motion-slow)]"
+                  style={{ width: `${((step + 1) / STEPS.length) * 100}%` }}
+                />
+              </div>
             </div>
             <CardTitle className="pt-2">{STEPS[step]}</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-6">
+          <CardContent key={step} className="space-y-6 motion-safe:animate-in motion-safe:fade-in motion-safe:duration-[var(--motion-fast)]">
             {step === 0 && <ExtrasSelector extras={extras} selected={extraSelection} onChange={setExtraSelection} />}
 
             {step === 1 && (
@@ -208,11 +221,11 @@ export function ParkingCheckoutWizard({
 
             {step === 2 && (
               <RadioGroup value={paymentMethod} onValueChange={(v) => setPaymentMethod(v as typeof paymentMethod)}>
-                <label className="flex items-center gap-3 rounded-md border p-3">
+                <label className="radio-card flex items-center gap-3 border p-3 has-[[data-state=checked]]:border-primary has-[[data-state=checked]]:bg-primary/5">
                   <RadioGroupItem value="credit_card" />
                   <Label className="font-normal">Carta di Credito</Label>
                 </label>
-                <label className="flex items-center gap-3 rounded-md border p-3">
+                <label className="radio-card flex items-center gap-3 border p-3 has-[[data-state=checked]]:border-primary has-[[data-state=checked]]:bg-primary/5">
                   <RadioGroupItem value="debit_card" />
                   <Label className="font-normal">Carta di Debito</Label>
                 </label>
@@ -262,7 +275,7 @@ export function ParkingCheckoutWizard({
       </div>
 
       <div>
-        <Card className="sticky top-20">
+        <Card className="surface-panel sticky top-20">
           <CardHeader>
             <CardTitle className="text-base">Riepilogo</CardTitle>
           </CardHeader>
@@ -272,22 +285,22 @@ export function ParkingCheckoutWizard({
             </p>
             <p className="text-muted-foreground">{keysLeft ? "Consegna chiavi in sede" : ""}</p>
             <Separator className="my-2" />
-            <p>Ingresso: {formatItalianDate(new Date(startDate))}</p>
-            <p>Uscita: {formatItalianDate(new Date(endDate))}</p>
-            <p>{days} giorni</p>
+            <p className="text-xs font-medium text-muted-foreground">Ingresso: {formatItalianDate(new Date(startDate))}</p>
+            <p className="text-xs font-medium text-muted-foreground">Uscita: {formatItalianDate(new Date(endDate))}</p>
+            <p className="text-xs font-medium text-muted-foreground">{days} giorni</p>
             <Separator className="my-2" />
-            <div className="flex justify-between">
+            <div className="flex justify-between text-xs font-medium text-muted-foreground">
               <span>Parcheggio</span>
               <span>EUR {basePrice.toFixed(2)}</span>
             </div>
-            <div className="flex justify-between">
+            <div className="flex justify-between text-xs font-medium text-muted-foreground">
               <span>Extra</span>
               <span>EUR {extrasPreview.toFixed(2)}</span>
             </div>
             <Separator className="my-2" />
-            <div className="flex justify-between text-base font-semibold">
-              <span>Totale stimato</span>
-              <span>EUR {totalPreview.toFixed(2)}</span>
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-semibold">Totale stimato</span>
+              <span className="text-xl font-black tabular-nums text-primary">EUR {totalPreview.toFixed(2)}</span>
             </div>
           </CardContent>
         </Card>

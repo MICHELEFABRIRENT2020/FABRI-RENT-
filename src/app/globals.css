@@ -338,17 +338,31 @@
 }
 
 /*
- * Fleet catalog surface (Step 40C) - same surface/elevation language as
- * .header-chrome/.premium-panel, applied to the vehicle cards and the
- * filter panel on /flotta, replacing their previous unrelated
- * `border-border bg-card/70` treatment. Static surface only - hover lift
- * on the vehicle cards is expressed via motion-safe: Tailwind utilities
- * in the component itself (same mechanism as the rest of Step 39C), not
- * duplicated here.
+ * Surface panel (Step 40C, renamed from .fleet-card in Step 41C once a
+ * second feature - Booking - started consuming the exact same surface).
+ * Same surface/elevation language as .header-chrome/.premium-panel.
+ * Used by the Fleet catalog cards/filter panel and, from Step 41C, the
+ * Booking wizard card + summary and the confirmation page. Static
+ * surface only - hover/entrance motion is expressed via motion-safe:
+ * Tailwind utilities in each component, not duplicated here.
  */
-.fleet-card {
+.surface-panel {
   background: color-mix(in srgb, var(--surface-panel) 70%, transparent);
   border-radius: var(--radius-panel);
+  box-shadow: var(--elevation-raised);
+}
+
+/*
+ * Radio-card surface (Step 41C) - the selectable-row pattern shared by
+ * InsuranceSelector, ExtrasSelector, and the payment method radios.
+ * Smaller radius than .surface-panel (these are control-level rows, not
+ * panels) but the same elevation/tint language. Selected-state styling
+ * (border-primary/bg-primary) is unchanged and stays in each component -
+ * this class only replaces the old plain `border` surface.
+ */
+.radio-card {
+  background: color-mix(in srgb, var(--surface-panel) 60%, transparent);
+  border-radius: var(--radius-control);
   box-shadow: var(--elevation-raised);
 }
 

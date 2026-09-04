@@ -111,7 +111,7 @@ export function InsuranceSelector({
             return (
               <label
                 key={option.id}
-                className="flex items-start gap-3 rounded-md border p-3 has-[[data-state=checked]]:border-primary has-[[data-state=checked]]:bg-primary/5 aria-disabled:opacity-50"
+                className="radio-card flex items-start gap-3 border p-3 has-[[data-state=checked]]:border-primary has-[[data-state=checked]]:bg-primary/5 aria-disabled:opacity-50"
                 aria-disabled={disabled}
               >
                 <RadioGroupItem value={option.id} disabled={disabled} className="mt-1" />
