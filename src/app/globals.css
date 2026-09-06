@@ -306,15 +306,29 @@
   border-color: var(--primary);
 }
 .premium-cta {
-  box-shadow:
+  --cta-glow:
     inset 0 1px 0 0 rgba(255, 255, 255, 0.18),
     0 8px 20px -6px var(--primary);
+  box-shadow: var(--cta-glow);
   transition:
     filter 0.2s ease,
     box-shadow 0.2s ease;
 }
 .premium-cta:hover {
   filter: brightness(1.08);
+}
+/*
+ * .premium-cta's own box-shadow is a static, unlayered declaration - it
+ * always wins over Button's @layer utilities focus-visible:ring-* (cascade
+ * layers, not specificity), so the shared ring never showed on these 2 CTAs.
+ * Composing --cta-glow with an explicit ring layer here (same --ring token
+ * and 3px/color-mix pattern Button already uses) restores a visible focus
+ * indicator without touching Button or the existing glow/hover behavior.
+ */
+.premium-cta:focus-visible {
+  box-shadow:
+    var(--cta-glow),
+    0 0 0 3px color-mix(in oklab, var(--ring) 50%, transparent);
 }
 @media (prefers-reduced-motion: reduce) {
   .premium-well,
